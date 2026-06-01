@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Video Assistant</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="app-shell">
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-mark">VA</div>
+                <div>
+                    <p class="eyebrow">AI Video Assistant</p>
+                    <h1>Video Intelligence</h1>
+                </div>
+            </div>
+
+            <section class="panel status-panel">
+                <div class="panel-header">
+                    <span class="panel-kicker">Pipeline</span>
+                    <span class="panel-caption">Live step status</span>
+                </div>
+
+                <div id="pipeline-steps" class="pipeline-steps"></div>
+            </section>
+        </aside>
+
+        <main class="main-content">
+            <section class="hero panel hero-panel">
+                <div class="hero-copy">
+                    <p class="eyebrow">Meeting Intelligence</p>
+                    <h2>Analyze, summarize, and chat with any video transcript.</h2>
+                </div>
+                <div class="hero-badges">
+                    <span>Transcription</span>
+                    <span>Summarisation</span>
+                    <span>Action Items</span>
+                    <span>RAG Chat</span>
+                </div>
+            </section>
+
+            <section id="message-bar" class="message-bar hidden"></section>
+
+            <section id="empty-state" class="panel empty-state">
+                <form id="analyze-form" class="input-panel">
+                    <div class="panel-header">
+                        <span class="panel-kicker">Input</span>
+                        <span class="status-chip" id="status-chip">Idle</span>
+                    </div>
+
+                    <label class="field">
+                        <span>YouTube URL, file path, or upload</span>
+                        <textarea id="source" name="source" rows="4" placeholder="https://youtube.com/watch?v=... or C:\path\to\audio.mp3"></textarea>
+                        <input id="media-file" name="file" class="file-input" type="file" accept="audio/*,video/*,.mp3,.mp4,.m4a,.wav,.aac,.flac,.ogg,.webm,.wma,.mov,.mkv,.avi">
+                        <label for="media-file" class="file-picker">
+                            <span>Choose audio/video file</span>
+                            <strong id="file-name">No file selected</strong>
+                        </label>
+                        <button type="submit" class="primary-btn" id="analyze-btn">Analyze Video</button>
+                    </label>
+
+                    <div class="field recorder-field">
+                        <span>Microphone Recording</span>
+                        <div class="recorder-controls">
+                            <button type="button" class="ghost-btn" id="record-start-btn">Start Recording</button>
+                            <button type="button" class="ghost-btn" id="record-stop-btn" disabled>Stop Recording</button>
+                            <button type="button" class="ghost-btn" id="record-discard-btn" disabled>Discard</button>
+                        </div>
+                        <div class="recording-status" id="recording-status">No microphone recording yet.</div>
+                        <audio id="recording-preview" class="recording-preview hidden" controls></audio>
+                    </div>
+
+                    <label class="field">
+                        <span>Language</span>
+                        <div class="language-toggle" role="group" aria-label="Language">
+                            <button type="button" class="language-option active" data-language="english">English</button>
+                            <button type="button" class="language-option" data-language="hinglish">Hinglish</button>
+                        </div>
+                        <select id="language" name="language" class="native-language-select" aria-hidden="true" tabindex="-1">
+                            <option value="english">English</option>
+                            <option value="hinglish">Hinglish</option>
+                        </select>
+                    </label>
+                </form>
+            </section>
+
+            <section id="results-section" class="results hidden">
+                <div class="panel title-panel">
+                    <p class="panel-kicker">Session Title</p>
+                    <h3 id="result-title">Untitled Session</h3>
+                </div>
+
+                <div class="results-grid top-grid">
+                    <article class="panel result-card">
+                        <div class="card-head">
+                            <p class="panel-kicker">Summary</p>
+                        </div>
+                        <div id="summary-content" class="text-block"></div>
+                    </article>
+
+                    <article class="panel result-card transcript-card">
+                        <details open>
+                            <summary>Full Transcript</summary>
+                            <div id="transcript-content" class="text-block transcript-block"></div>
+                        </details>
+                    </article>
+                </div>
+
+                <div class="results-grid bottom-grid">
+                    <article class="panel result-card">
+                        <div class="card-head">
+                            <p class="panel-kicker">Action Items</p>
+                        </div>
+                        <div id="action-items-content" class="text-block"></div>
+                    </article>
+
+                    <article class="panel result-card">
+                        <div class="card-head">
+                            <p class="panel-kicker">Key Decisions</p>
+                        </div>
+                        <div id="key-decisions-content" class="text-block"></div>
+                    </article>
+
+                    <article class="panel result-card">
+                        <div class="card-head">
+                            <p class="panel-kicker">Open Questions</p>
+                        </div>
+                        <div id="open-questions-content" class="text-block"></div>
+                    </article>
+                </div>
+
+                <section class="panel chat-panel">
+                    <div class="chat-header">
+                        <div>
+                            <p class="panel-kicker">Transcript Chat</p>
+                            <h3>Ask questions about the meeting</h3>
+                        </div>
+                        <button id="clear-chat-btn" class="ghost-btn" type="button">Clear Chat</button>
+                    </div>
+
+                    <div id="chat-history" class="chat-history">
+                        <div class="chat-empty">
+                            <p>No messages yet. Ask anything about the transcript.</p>
+                        </div>
+                    </div>
+
+                    <form id="chat-form" class="chat-form">
+                        <textarea id="chat-input" rows="2" placeholder="What were the main decisions made?"></textarea>
+                        <button type="submit" class="primary-btn" id="send-btn">Send</button>
+                    </form>
+                </section>
+            </section>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,47 @@
+# ─────────────────────────────────────────────
+#  AI Meeting Assistant — Python Dependencies
+# ─────────────────────────────────────────────
+
+# ── Audio & Transcription ──────────────────────
+openai-whisper>=20250101          # Local Whisper transcription (>=20250101 fixes pkg_resources build error)
+yt-dlp>=2024.4.9                  # YouTube audio download (actively maintained fork)
+ffmpeg-python>=0.2.0              # FFmpeg Python bindings (ffmpeg binary required separately)
+pydub>=0.25.1                     # Audio file manipulation & chunking
+audioop-lts                       # Required by pydub for Python 3.13+ (audioop was removed)
+
+# ── Translation ────────────────────────────────
+deep-translator==1.11.4           # Hindi → English translation (free, no API key needed)
+
+# ── LangChain & LLM (Mistral) ─────────────────
+langchain>=0.3.0,<0.4             
+langchain-core>=0.3.58,<0.4      
+langchain-community>=0.3.0,<0.4  
+langchain-mistralai>=0.2.0        # LangChain-native Mistral integration
+mistralai>=1.0.3                  # Official Mistral AI client
+langchain-text-splitters>=0.3.0   # Text chunking for RAG
+
+# ── RAG Pipeline ───────────────────────────────
+chromadb>=0.5.0                   # Local vector store
+langchain-chroma>=0.1.2           # LangChain ↔ ChromaDB bridge
+sentence-transformers>=3.0.1      # HuggingFace embedding models
+huggingface-hub>=0.24.5           # Model downloads from HuggingFace Hub
+torch==2.11.0                     # Required by sentence-transformers (CPU build) — 2.3.1 not available for Python 3.13+
+transformers>=4.43.3              # HuggingFace Transformers backbone
+
+# ── Streamlit UI ───────────────────────────────
+streamlit>=1.37.0
+streamlit-chat>=0.1.1             # Chat message UI components
+watchdog>=4.0.1                   # Streamlit hot-reload support
+
+# ── PDF & TXT Export ──────────────────────────
+reportlab>=4.2.2                  # PDF generation
+fpdf2>=2.7.9                      # Lightweight alternative PDF library
+
+# ── Utilities ─────────────────────────────────
+python-dotenv>=1.0.1              # Load .env for API keys
+tenacity>=8.4.1                   # Retry logic for API calls
+tqdm>=4.66.4                      # Progress bars
+numpy>=2.0,<3.0                   # Numerical ops (Whisper / torch dependency) — 2.x has pre-built wheels for Python 3.13+
+requests>=2.32.3                  # HTTP client
+Flask>=3.0.0                      # HTML/CSS/JS web server for local UI
+redis>=5.0.0                      # Optional Redis-backed run/session state
