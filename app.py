@@ -236,6 +236,10 @@ def reset_state_for_run(run_id, sid, tab_id):
         RAG_CHAINS.pop(run_id, None)
 
 
+def log_pipeline(run_id, message):
+    print(f"[pipeline:{run_id}] {message}", flush=True)
+
+
 def run_pipeline_async(run_id, source, language):
     try:
         from core.extractor import extract_action_items, extract_key_decisions, extract_questions
@@ -244,32 +248,44 @@ def run_pipeline_async(run_id, source, language):
         from core.transcriber import transcribe_all
         from utils.audio_processor import process_input
 
+        log_pipeline(run_id, "Starting audio processing")
         update_step(run_id, "audio", "active")
         chunks = process_input(source)
         update_step(run_id, "audio", "done")
+        log_pipeline(run_id, f"Audio processing done ({len(chunks)} chunk(s))")
 
+        log_pipeline(run_id, "Starting transcription")
         update_step(run_id, "transcript", "active")
         transcript = transcribe_all(chunks, language)
         update_step(run_id, "transcript", "done")
+        log_pipeline(run_id, f"Transcription done ({len(transcript)} characters)")
 
+        log_pipeline(run_id, "Starting title generation")
         update_step(run_id, "title", "active")
         title = generate_title(transcript)
         update_step(run_id, "title", "done")
+        log_pipeline(run_id, "Title generation done")
 
+        log_pipeline(run_id, "Starting summarisation")
         update_step(run_id, "summary", "active")
         summary = summarize(transcript)
         update_step(run_id, "summary", "done")
+        log_pipeline(run_id, "Summarisation done")
 
+        log_pipeline(run_id, "Starting extraction")
         update_step(run_id, "extract", "active")
         action_items = extract_action_items(transcript)
         key_decisions = extract_key_decisions(transcript)
         open_questions = extract_questions(transcript)
         update_step(run_id, "extract", "done")
+        log_pipeline(run_id, "Extraction done")
 
+        log_pipeline(run_id, "Starting RAG vector store")
         update_step(run_id, "rag", "active")
         rag_chain = build_rag_chain(transcript, run_id=run_id)
         chroma_path = os.path.join("vector_db", "runs", run_id)
         update_step(run_id, "rag", "done")
+        log_pipeline(run_id, f"RAG vector store done at {chroma_path}")
 
         RAG_CHAINS[run_id] = rag_chain
         update_state(
@@ -286,7 +302,9 @@ def run_pipeline_async(run_id, source, language):
                 "open_questions": open_questions,
             },
         )
+        log_pipeline(run_id, "Pipeline complete")
     except Exception as exc:
+        log_pipeline(run_id, f"Pipeline failed: {exc}")
         with STATE_LOCK:
             state = _ensure_state_unlocked(run_id)
             for step, status in state["pipeline_steps"].items():
