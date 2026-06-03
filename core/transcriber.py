@@ -1,16 +1,14 @@
 import os
 import requests
 import time
+from huggingface_hub import InferenceClient
 from pydub import AudioSegment
 
 SARVAM_PIECE_SECONDS = 25
 
 HF_API_KEY = os.getenv("HUGGINGFACE_API_KEY") or os.getenv("HF_TOKEN")
-HF_WHISPER_MODEL = os.getenv("HF_WHISPER_MODEL", "openai/whisper-small")
-HF_STT_URL = os.getenv(
-    "HF_STT_URL",
-    f"https://router.huggingface.co/hf-inference/models/{HF_WHISPER_MODEL}",
-)
+HF_WHISPER_MODEL = os.getenv("HF_WHISPER_MODEL", "openai/whisper-large-v3")
+HF_PROVIDER = os.getenv("HF_PROVIDER", "fal-ai")
 
 SARVAM_API_KEY =os.getenv("SARVAM_API_KEY")
 SARVAM_STT_TRANSLATE_URL = "https://api.sarvam.ai/speech-to-text-translate"
@@ -20,34 +18,23 @@ def transcribe_chunk_huggingface(chunk_path: str) -> str:
     if not HF_API_KEY:
         raise RuntimeError("HUGGINGFACE_API_KEY or HF_TOKEN is not set in environment / .env")
 
-    headers = {"Authorization": f"Bearer {HF_API_KEY}"}
-
-    with open(chunk_path, "rb") as f:
-        audio_data = f.read()
-
-    last_response = None
+    client = InferenceClient(provider=HF_PROVIDER, api_key=HF_API_KEY)
+    last_error = None
     for attempt in range(3):
-        response = requests.post(
-            HF_STT_URL,
-            headers=headers,
-            data=audio_data,
-            timeout=300,
-        )
+        try:
+            result = client.automatic_speech_recognition(
+                chunk_path,
+                model=HF_WHISPER_MODEL,
+            )
+            return result.text
+        except Exception as exc:
+            last_error = exc
+            if attempt == 2:
+                break
+            time.sleep(2 * (attempt + 1))
 
-        if response.status_code not in {429, 503, 504}:
-            break
-
-        last_response = response
-        time.sleep(2 * (attempt + 1))
-    else:
-        response = last_response
-
-    if not response.ok:
-        print(f"\nHugging Face returned {response.status_code}")
-        print(f"Response body: {response.text}\n")
-        response.raise_for_status()
-
-    return response.json().get("text", "")
+    print(f"\nHugging Face transcription failed: {last_error}\n")
+    raise last_error
 
 def _send_to_sarvam(piece_path: str) -> str:
     """Send one ≤30s WAV file to Sarvam and return the English transcript."""
