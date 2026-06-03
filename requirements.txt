@@ -3,7 +3,6 @@
 # ─────────────────────────────────────────────
 
 # ── Audio & Transcription ──────────────────────
-openai-whisper>=20250101          # Local Whisper transcription (>=20250101 fixes pkg_resources build error)
 yt-dlp>=2024.4.9                  # YouTube audio download (actively maintained fork)
 ffmpeg-python>=0.2.0              # FFmpeg Python bindings (ffmpeg binary required separately)
 pydub>=0.25.1                     # Audio file manipulation & chunking

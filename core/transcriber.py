@@ -1,35 +1,53 @@
-import whisper
 import os
 import requests
+import time
 from pydub import AudioSegment
 
 SARVAM_PIECE_SECONDS = 25
 
-WHISPER_MODEL = os.getenv("WHISPER_MODEL","small")
+HF_API_KEY = os.getenv("HUGGINGFACE_API_KEY") or os.getenv("HF_TOKEN")
+HF_WHISPER_MODEL = os.getenv("HF_WHISPER_MODEL", "openai/whisper-small")
+HF_STT_URL = os.getenv(
+    "HF_STT_URL",
+    f"https://router.huggingface.co/hf-inference/models/{HF_WHISPER_MODEL}",
+)
 
 SARVAM_API_KEY =os.getenv("SARVAM_API_KEY")
 SARVAM_STT_TRANSLATE_URL = "https://api.sarvam.ai/speech-to-text-translate"
 SARVAM_MODEL = os.getenv("SARVAM_STT_MODEL", "saaras:v2.5")
 
-_model = None
+def transcribe_chunk_huggingface(chunk_path: str) -> str:
+    if not HF_API_KEY:
+        raise RuntimeError("HUGGINGFACE_API_KEY or HF_TOKEN is not set in environment / .env")
 
-def load_model():
+    headers = {"Authorization": f"Bearer {HF_API_KEY}"}
 
-    global _model  
+    with open(chunk_path, "rb") as f:
+        audio_data = f.read()
 
-    if _model is None: 
-        print(f"Loading Whisper model: {WHISPER_MODEL} ...")
-        _model = whisper.load_model(WHISPER_MODEL) 
-        print("Whisper model loaded.")
-    return _model 
+    last_response = None
+    for attempt in range(3):
+        response = requests.post(
+            HF_STT_URL,
+            headers=headers,
+            data=audio_data,
+            timeout=300,
+        )
 
+        if response.status_code not in {429, 503, 504}:
+            break
 
-def transcribe_chunk_whisper(chunk_path: str) -> str:
+        last_response = response
+        time.sleep(2 * (attempt + 1))
+    else:
+        response = last_response
 
-    model = load_model()  
+    if not response.ok:
+        print(f"\nHugging Face returned {response.status_code}")
+        print(f"Response body: {response.text}\n")
+        response.raise_for_status()
 
-    result = model.transcribe(chunk_path, task="transcribe")  
-    return result["text"]  
+    return response.json().get("text", "")
 
 def _send_to_sarvam(piece_path: str) -> str:
     """Send one ≤30s WAV file to Sarvam and return the English transcript."""
@@ -105,19 +123,19 @@ def transcribe_chunk_sarvam(chunk_path: str) -> str:
    
 def transcribe_chunk(chunk_path: str, language: str = "english") -> str:
     """
-    Route one chunk to Whisper or Sarvam depending on language choice.
-    - english  → Whisper (local model)
+    Route one chunk to Hugging Face or Sarvam depending on language choice.
+    - english  → Hugging Face Whisper API
     - hinglish → Sarvam (translates to English while transcribing)
     """
     if language.lower() == "hinglish":
         return transcribe_chunk_sarvam(chunk_path)
-    return transcribe_chunk_whisper(chunk_path)
+    return transcribe_chunk_huggingface(chunk_path)
 
 def transcribe_all(chunks: list, language: str = "english") -> str:
 
     full_transcript = "" 
 
-    engine = "Sarvam AI" if language.lower() == "hinglish" else "Whisper"
+    engine = "Sarvam AI" if language.lower() == "hinglish" else "Hugging Face Whisper API"
     print(f"Using {engine} for transcription.")
 
     for i, chunk in enumerate(chunks):  
