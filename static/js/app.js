@@ -7,6 +7,7 @@ function createClientId() {
 
 const state = {
     pollTimer: null,
+    pollFailures: 0,
     processing: false,
     tabId: window.sessionStorage.getItem("video_agent_tab_id") || createClientId(),
     activeRunId: window.sessionStorage.getItem("video_agent_run_id") || "",
@@ -203,7 +204,11 @@ async function fetchState() {
     }
 
     const response = await fetch(`/api/state?${params.toString()}`);
+    if (!response.ok) {
+        throw new Error("State refresh failed.");
+    }
     const data = await response.json();
+    state.pollFailures = 0;
     applyState(data);
     return data;
 }
@@ -245,9 +250,17 @@ function startPolling() {
         try {
             await fetchState();
         } catch (error) {
-            setMessage("Unable to refresh pipeline status.", "error");
-            stopPolling();
-            setProcessingUI(false);
+            state.pollFailures += 1;
+            console.error("Unable to refresh pipeline status.", error);
+
+            if (state.pollFailures >= 5) {
+                setMessage("Unable to refresh pipeline status. Please reload the page and check the latest run state.", "error");
+                stopPolling();
+                setProcessingUI(false);
+                return;
+            }
+
+            setMessage("Refreshing pipeline status...", "info");
         }
     }, 1500);
 }
