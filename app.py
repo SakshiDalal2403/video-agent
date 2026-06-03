@@ -1,6 +1,7 @@
 import os
 import json
 import threading
+import time
 import uuid
 
 from dotenv import load_dotenv
@@ -19,7 +20,9 @@ STATE_LOCK = threading.Lock()
 USER_STATE = {}
 ACTIVE_RUNS = {}
 RAG_CHAINS = {}
+WORKER_STOP_EVENTS = {}
 REDIS_TTL_SECONDS = int(os.getenv("REDIS_TTL_SECONDS", "86400"))
+STALE_RUN_SECONDS = int(os.getenv("STALE_RUN_SECONDS", "180"))
 REDIS_CLIENT = None
 
 try:
@@ -50,6 +53,7 @@ def default_pipeline_steps():
 
 
 def _build_default_state():
+    now = time.time()
     return {
         "processing": False,
         "pipeline_done": False,
@@ -57,6 +61,9 @@ def _build_default_state():
         "result": None,
         "chat_history": [],
         "error": None,
+        "started_at": None,
+        "updated_at": now,
+        "heartbeat_at": None,
     }
 
 
@@ -99,6 +106,7 @@ def _save_state_unlocked(run_id, state):
     if not run_id:
         return
 
+    state["updated_at"] = time.time()
     USER_STATE[run_id] = state
 
     if REDIS_CLIENT is not None:
@@ -173,7 +181,27 @@ def get_session_id():
 
 
 def _ensure_state_unlocked(run_id):
-    return _load_state_unlocked(run_id)
+    state = _load_state_unlocked(run_id)
+    _mark_stale_state_unlocked(run_id, state)
+    return state
+
+
+def _mark_stale_state_unlocked(run_id, state):
+    if not run_id or not state.get("processing"):
+        return
+
+    heartbeat_at = state.get("heartbeat_at") or state.get("updated_at") or state.get("started_at")
+    if heartbeat_at and time.time() - float(heartbeat_at) <= STALE_RUN_SECONDS:
+        return
+
+    for step, status in state["pipeline_steps"].items():
+        if status == "active":
+            state["pipeline_steps"][step] = "pending"
+
+    state["processing"] = False
+    state["pipeline_done"] = False
+    state["error"] = "Pipeline stopped because the server restarted during processing. Please start the analysis again."
+    _save_state_unlocked(run_id, state)
 
 
 def ensure_state(run_id):
@@ -227,10 +255,13 @@ def append_chat_message(run_id, role, content):
 def reset_state_for_run(run_id, sid, tab_id):
     with STATE_LOCK:
         state = _build_default_state()
+        now = time.time()
         state["processing"] = True
         state["sid"] = sid
         state["tab_id"] = tab_id
         state["run_id"] = run_id
+        state["started_at"] = now
+        state["heartbeat_at"] = now
         USER_STATE[run_id] = state
         _save_state_unlocked(run_id, state)
         RAG_CHAINS.pop(run_id, None)
@@ -240,7 +271,26 @@ def log_pipeline(run_id, message):
     print(f"[pipeline:{run_id}] {message}", flush=True)
 
 
+def heartbeat_pipeline(run_id, stop_event):
+    while not stop_event.wait(15):
+        with STATE_LOCK:
+            state = _load_state_unlocked(run_id)
+            if not state.get("processing"):
+                return
+            state["heartbeat_at"] = time.time()
+            _save_state_unlocked(run_id, state)
+
+
 def run_pipeline_async(run_id, source, language):
+    stop_event = threading.Event()
+    WORKER_STOP_EVENTS[run_id] = stop_event
+    heartbeat = threading.Thread(
+        target=heartbeat_pipeline,
+        args=(run_id, stop_event),
+        daemon=True,
+    )
+    heartbeat.start()
+
     try:
         from core.extractor import extract_action_items, extract_key_decisions, extract_questions
         from core.rag_engine import build_rag_chain
@@ -314,6 +364,9 @@ def run_pipeline_async(run_id, source, language):
             state["pipeline_done"] = False
             state["error"] = str(exc)
             _save_state_unlocked(run_id, state)
+    finally:
+        stop_event.set()
+        WORKER_STOP_EVENTS.pop(run_id, None)
 
 
 @app.route("/")
