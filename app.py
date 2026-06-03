@@ -292,10 +292,6 @@ def run_pipeline_async(run_id, source, language):
     heartbeat.start()
 
     try:
-        from core.extractor import extract_action_items, extract_key_decisions, extract_questions
-        from core.rag_engine import build_rag_chain
-        from core.summarize import generate_title, summarize
-        from core.transcriber import transcribe_all
         from utils.audio_processor import process_input
 
         log_pipeline(run_id, "Starting audio processing")
@@ -304,11 +300,15 @@ def run_pipeline_async(run_id, source, language):
         update_step(run_id, "audio", "done")
         log_pipeline(run_id, f"Audio processing done ({len(chunks)} chunk(s))")
 
+        from core.transcriber import transcribe_all
+
         log_pipeline(run_id, "Starting transcription")
         update_step(run_id, "transcript", "active")
         transcript = transcribe_all(chunks, language)
         update_step(run_id, "transcript", "done")
         log_pipeline(run_id, f"Transcription done ({len(transcript)} characters)")
+
+        from core.summarize import generate_title, summarize
 
         log_pipeline(run_id, "Starting title generation")
         update_step(run_id, "title", "active")
@@ -322,6 +322,8 @@ def run_pipeline_async(run_id, source, language):
         update_step(run_id, "summary", "done")
         log_pipeline(run_id, "Summarisation done")
 
+        from core.extractor import extract_action_items, extract_key_decisions, extract_questions
+
         log_pipeline(run_id, "Starting extraction")
         update_step(run_id, "extract", "active")
         action_items = extract_action_items(transcript)
@@ -329,6 +331,8 @@ def run_pipeline_async(run_id, source, language):
         open_questions = extract_questions(transcript)
         update_step(run_id, "extract", "done")
         log_pipeline(run_id, "Extraction done")
+
+        from core.rag_engine import build_rag_chain
 
         log_pipeline(run_id, "Starting RAG vector store")
         update_step(run_id, "rag", "active")
