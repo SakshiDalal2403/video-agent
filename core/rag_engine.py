@@ -5,6 +5,11 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough, RunnableLambda
 from core.vector_store import build_vector_store, load_vector_store, get_retriever
 
+RAG_TOP_K = 4
+
+def log_rag(message: str):
+    print(f"[rag] {message}", flush=True)
+
 def get_llm():
     return ChatMistralAI(
         model="mistral-small-latest",
@@ -16,12 +21,16 @@ def format_docs(docs):
     return "\n\n".join([doc.page_content for doc in docs])
 
 def build_rag_chain(transcript:str, run_id: str | None = None):
+    log_rag(f"Starting RAG chain build for run_id={run_id}")
 
     vector_store = build_vector_store(transcript, run_id=run_id)
+    log_rag("Vector store ready")
 
-    retriever = get_retriever(vector_store, k = 4)
+    retriever = get_retriever(vector_store, k = RAG_TOP_K)
+    log_rag(f"Retriever ready; it will pick top {RAG_TOP_K} chunk(s) per question")
 
     llm = get_llm()
+    log_rag("Mistral LLM ready for RAG answers")
 
     prompt = ChatPromptTemplate.from_messages(
 
@@ -52,12 +61,15 @@ Context from meeting transcript:
          |prompt|llm|StrOutputParser()
     )
 
+    log_rag("RAG chain build complete")
     return rag_chain
 
 
 def load_rag_chain(persist_directory: str | None = None):
+    log_rag(f"Loading RAG chain from persist_directory={persist_directory}")
     vector_store = load_vector_store(persist_directory) if persist_directory else load_vector_store()
-    retriver = get_retriever(vector_store)
+    retriver = get_retriever(vector_store, k=RAG_TOP_K)
+    log_rag(f"Retriever ready; it will pick top {RAG_TOP_K} chunk(s) per question")
 
     llm = get_llm()
     prompt = ChatPromptTemplate.from_messages([
@@ -87,6 +99,7 @@ Context from meeting transcript:
         | StrOutputParser()
     )
 
+    log_rag("RAG chain load complete")
     return rag_chain
 
 
