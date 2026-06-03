@@ -40,7 +40,11 @@ def summarize(transcript : str) -> str:
 
     map_prompt = ChatPromptTemplate.from_messages(
         [
-        ("system", "Summarize this portion of a meeting transcript concisely."),
+        (
+            "system",
+            "Summarize only the information explicitly stated in this transcript portion. "
+            "Do not add outside knowledge, assumptions, examples, objectives, or future directions.",
+        ),
         ("human", "{text}"),
     ]
     )
@@ -57,8 +61,9 @@ def summarize(transcript : str) -> str:
         [
         (
             "system",
-            "You are an expert meeting summarizer. Combine these partial summaries "
-            "into one final professional meeting summary in bullet points.",
+            "Combine these partial summaries into one concise final summary. "
+            "Use only the provided text. Do not add outside knowledge or expand the topic. "
+            "If the transcript is very short, return 1-2 short sentences instead of bullet points.",
         ),
         ("human", "{text}"),
     ]
