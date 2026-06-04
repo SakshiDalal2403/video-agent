@@ -1,17 +1,49 @@
 import os
 import time
 import uuid
+import requests
 from langchain_chroma import Chroma 
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_core.embeddings import Embeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
 
 CHROMA_DIR = "vector_db"
 COLLECTION_NAME = "meeting_transcript"
-EMBEDDING_MODEL  = "all-MiniLM-L6-v2"
+EMBEDDING_MODEL  = "mistral-embed"
+MISTRAL_EMBEDDINGS_URL = "https://api.mistral.ai/v1/embeddings"
+EMBEDDING_BATCH_SIZE = 64
 
 def log_vector(message: str):
     print(f"[vector_store] {message}", flush=True)
+
+class MistralAPIEmbeddings(Embeddings):
+    def __init__(self):
+        self.api_key = os.getenv("MISTRAL_API_KEY")
+        if not self.api_key:
+            raise RuntimeError("MISTRAL_API_KEY is not set in environment / .env")
+
+    def _embed_batch(self, texts: list[str]) -> list[list[float]]:
+        response = requests.post(
+            MISTRAL_EMBEDDINGS_URL,
+            headers={
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+            },
+            json={"model": EMBEDDING_MODEL, "input": texts},
+            timeout=120,
+        )
+        response.raise_for_status()
+        return [item["embedding"] for item in response.json()["data"]]
+
+    def embed_documents(self, texts: list[str]) -> list[list[float]]:
+        embeddings = []
+        for start in range(0, len(texts), EMBEDDING_BATCH_SIZE):
+            embeddings.extend(self._embed_batch(texts[start:start + EMBEDDING_BATCH_SIZE]))
+        return embeddings
+
+    def embed_query(self, text: str) -> list[float]:
+        return self.embed_documents([text])[0]
 
 def _new_run_chroma_dir(run_id: str | None = None) -> str:
     run_dir = os.path.join(CHROMA_DIR, "runs", run_id or uuid.uuid4().hex)
@@ -20,11 +52,8 @@ def _new_run_chroma_dir(run_id: str | None = None) -> str:
     return run_dir
 
 def get_embeddings():
-    log_vector(f"Loading embedding model: {EMBEDDING_MODEL}")
-    return HuggingFaceEmbeddings(
-        model_name = EMBEDDING_MODEL,
-        model_kwargs = {"device" : 'cpu'}
-    )
+    log_vector(f"Using Mistral embedding API model: {EMBEDDING_MODEL}")
+    return MistralAPIEmbeddings()
  
 def build_vector_store(transcript : str, run_id: str | None = None)->Chroma:
     started_at = time.time()

@@ -22,10 +22,7 @@ langchain-text-splitters>=0.3.0   # Text chunking for RAG
 # ── RAG Pipeline ───────────────────────────────
 chromadb>=0.5.0                   # Local vector store
 langchain-chroma>=0.1.2           # LangChain ↔ ChromaDB bridge
-sentence-transformers>=3.0.1      # HuggingFace embedding models
 huggingface-hub>=0.24.5           # Model downloads from HuggingFace Hub
-torch==2.11.0                     # Required by sentence-transformers (CPU build) — 2.3.1 not available for Python 3.13+
-transformers>=4.43.3              # HuggingFace Transformers backbone
 
 # ── Streamlit UI ───────────────────────────────
 streamlit>=1.37.0
