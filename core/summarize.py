@@ -8,6 +8,8 @@ from langchain_core.runnables import RunnablePassthrough, RunnableLambda
 import os
 import time
 
+DIRECT_SUMMARY_CHAR_LIMIT = 12000
+
 
 def invoke_with_retry(chain, payload, attempts: int = 3):
     last_error = None
@@ -37,6 +39,7 @@ def split_transcript(transcript: str) -> list:
 
 def summarize(transcript : str) -> str:
     llm = get_llm()
+    chunks = split_transcript(transcript)
 
     map_prompt = ChatPromptTemplate.from_messages(
         [
@@ -51,7 +54,8 @@ def summarize(transcript : str) -> str:
 
     map_chain = map_prompt | llm | StrOutputParser()
 
-    chunks = split_transcript(transcript)
+    if len(transcript) <= DIRECT_SUMMARY_CHAR_LIMIT:
+        return invoke_with_retry(map_chain, {"text" : transcript})
 
     chunk_summaries = [invoke_with_retry(map_chain, {"text" : chunk}) for chunk in chunks]
 
