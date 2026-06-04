@@ -40,7 +40,6 @@ tqdm>=4.66.4                      # Progress bars
 numpy>=2.0,<3.0                   # Numerical ops (Whisper / torch dependency) — 2.x has pre-built wheels for Python 3.13+
 requests>=2.32.3                  # HTTP client
 Flask>=3.0.0                      # HTML/CSS/JS web server for local UI
-redis>=5.0.0                      # Optional Redis-backed run/session state
 
 
 gunicorn>=21.2.0

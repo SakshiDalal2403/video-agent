@@ -1,5 +1,4 @@
 import os
-import json
 import threading
 import time
 import uuid
@@ -21,21 +20,7 @@ USER_STATE = {}
 ACTIVE_RUNS = {}
 RAG_CHAINS = {}
 WORKER_STOP_EVENTS = {}
-REDIS_TTL_SECONDS = int(os.getenv("REDIS_TTL_SECONDS", "86400"))
 STALE_RUN_SECONDS = int(os.getenv("STALE_RUN_SECONDS", "180"))
-REDIS_CLIENT = None
-
-try:
-    import redis
-
-    REDIS_CLIENT = redis.from_url(
-        os.getenv("REDIS_URL", "redis://localhost:6379/0"),
-        decode_responses=True,
-        socket_connect_timeout=1,
-        socket_timeout=1,
-    )
-except Exception:
-    REDIS_CLIENT = None
 
 PIPELINE_ORDER = ["audio", "transcript", "title", "summary", "extract", "rag"]
 PIPELINE_LABELS = {
@@ -67,34 +52,13 @@ def _build_default_state():
     }
 
 
-def _run_state_key(run_id):
-    return f"video_agent:run:{run_id}:state"
-
-
-def _active_run_key(sid, tab_id):
-    return f"video_agent:active:{sid}:{tab_id}"
-
-
 def _memory_active_key(sid, tab_id):
     return f"{sid}:{tab_id}"
-
-
-def _disable_redis():
-    global REDIS_CLIENT
-    REDIS_CLIENT = None
 
 
 def _load_state_unlocked(run_id):
     if not run_id:
         return _build_default_state()
-
-    if REDIS_CLIENT is not None:
-        try:
-            raw_state = REDIS_CLIENT.get(_run_state_key(run_id))
-            if raw_state:
-                return json.loads(raw_state)
-        except Exception:
-            _disable_redis()
 
     if run_id not in USER_STATE:
         USER_STATE[run_id] = _build_default_state()
@@ -109,16 +73,6 @@ def _save_state_unlocked(run_id, state):
     state["updated_at"] = time.time()
     USER_STATE[run_id] = state
 
-    if REDIS_CLIENT is not None:
-        try:
-            REDIS_CLIENT.setex(
-                _run_state_key(run_id),
-                REDIS_TTL_SECONDS,
-                json.dumps(state),
-            )
-        except Exception:
-            _disable_redis()
-
 
 def set_active_run(sid, tab_id, run_id):
     if not tab_id:
@@ -126,28 +80,10 @@ def set_active_run(sid, tab_id, run_id):
 
     ACTIVE_RUNS[_memory_active_key(sid, tab_id)] = run_id
 
-    if REDIS_CLIENT is not None:
-        try:
-            REDIS_CLIENT.setex(
-                _active_run_key(sid, tab_id),
-                REDIS_TTL_SECONDS,
-                run_id,
-            )
-        except Exception:
-            _disable_redis()
-
 
 def get_active_run(sid, tab_id):
     if not tab_id:
         return None
-
-    if REDIS_CLIENT is not None:
-        try:
-            run_id = REDIS_CLIENT.get(_active_run_key(sid, tab_id))
-            if run_id:
-                return run_id
-        except Exception:
-            _disable_redis()
 
     return ACTIVE_RUNS.get(_memory_active_key(sid, tab_id))
 
