@@ -308,10 +308,10 @@ def run_pipeline_async(run_id, source, language):
         update_step(run_id, "transcript", "done")
         log_pipeline(run_id, f"Transcription done ({len(transcript)} characters)")
 
-        from core.summarize import generate_title, summarize
-
         log_pipeline(run_id, "Starting title generation")
         update_step(run_id, "title", "active")
+        from core.summarize import generate_title, summarize
+
         title = generate_title(transcript)
         update_step(run_id, "title", "done")
         log_pipeline(run_id, "Title generation done")

@@ -253,7 +253,7 @@ function startPolling() {
             state.pollFailures += 1;
             console.error("Unable to refresh pipeline status.", error);
 
-            if (state.pollFailures >= 5) {
+            if (state.pollFailures >= 20) {
                 setMessage("Unable to refresh pipeline status. Please reload the page and check the latest run state.", "error");
                 stopPolling();
                 setProcessingUI(false);
