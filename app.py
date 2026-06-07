@@ -258,13 +258,14 @@ def run_pipeline_async(run_id, source, language):
         update_step(run_id, "summary", "done")
         log_pipeline(run_id, "Summarisation done")
 
-        from core.extractor import extract_action_items, extract_key_decisions, extract_questions
+        from core.extractor import extract_meeting_insights
 
         log_pipeline(run_id, "Starting extraction")
         update_step(run_id, "extract", "active")
-        action_items = extract_action_items(transcript)
-        key_decisions = extract_key_decisions(transcript)
-        open_questions = extract_questions(transcript)
+        insights = extract_meeting_insights(transcript)
+        action_items = insights["action_items"]
+        key_decisions = insights["key_decisions"]
+        open_questions = insights["open_questions"]
         update_step(run_id, "extract", "done")
         log_pipeline(run_id, "Extraction done")
 

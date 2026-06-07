@@ -2,7 +2,7 @@ from dotenv import load_dotenv
 from utils.audio_processor import process_input
 from core.transcriber import transcribe_all
 from core.summarize import summarize, generate_title
-from core.extractor import extract_action_items, extract_key_decisions, extract_questions
+from core.extractor import extract_meeting_insights
 from core.rag_engine import build_rag_chain, ask_question
 
 
@@ -20,10 +20,7 @@ def run_pipeline(source :str, language :str = "english") -> dict:
 
     summary = summarize(transcript)
 
-    action_item = extract_action_items(transcript)
-
-    decisions = extract_key_decisions(transcript)
-    questions = extract_questions(transcript)
+    insights = extract_meeting_insights(transcript)
     
     rag_chain = build_rag_chain(transcript)
 
@@ -31,9 +28,9 @@ def run_pipeline(source :str, language :str = "english") -> dict:
         "title": title,
         "transcript": transcript,
         "summary": summary,
-        "action_items": action_item,
-        "key_decisions": decisions,
-        "open_questions": questions,
+        "action_items": insights["action_items"],
+        "key_decisions": insights["key_decisions"],
+        "open_questions": insights["open_questions"],
         "rag_chain": rag_chain,
     }
 
