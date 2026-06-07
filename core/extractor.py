@@ -6,7 +6,6 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough, RunnableLambda
 import os 
 import time 
-import json
 
 
 def invoke_with_retry(chain, payload, attempts: int = 3):
@@ -35,42 +34,6 @@ def build_chain(system_prompt : str):
         ("human","{text}"),
     ]) | llm |StrOutputParser()
     )
-
-
-def parse_extraction_response(response: str) -> dict:
-    try:
-        data = json.loads(response)
-    except json.JSONDecodeError:
-        return {
-            "action_items": response,
-            "key_decisions": "Could not parse key decisions from extraction response.",
-            "open_questions": "Could not parse open questions from extraction response.",
-        }
-
-    return {
-        "action_items": data.get("action_items", "No action items found."),
-        "key_decisions": data.get("key_decisions", "No key decisions found."),
-        "open_questions": data.get("open_questions", "No open questions found."),
-    }
-
-
-def extract_meeting_insights(transcript: str) -> dict:
-    chain = build_chain(
-        "You are an expert meeting analyst. From the meeting transcript, extract:\n"
-        "1. Action items. For each provide task description, owner, and deadline. "
-        "If deadline is not mentioned, write 'Not specified'.\n"
-        "2. Key decisions made.\n"
-        "3. Open questions or topics needing follow-up.\n\n"
-        "Return only valid JSON with exactly these string fields:\n"
-        "{"
-        "\"action_items\": \"numbered list or No action items found.\", "
-        "\"key_decisions\": \"numbered list or No key decisions found.\", "
-        "\"open_questions\": \"numbered list or No open questions found.\""
-        "}"
-    )
-
-    response = invoke_with_retry(chain, transcript)
-    return parse_extraction_response(response)
 
 def extract_action_items(transcript:str)->str:
     chain = build_chain(
