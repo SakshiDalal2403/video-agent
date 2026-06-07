@@ -21,6 +21,7 @@ const state = {
     recordedChunks: [],
     recordedFile: null,
     recordingUrl: "",
+    inputRevealed: false,
 };
 
 window.sessionStorage.setItem("video_agent_tab_id", state.tabId);
@@ -35,6 +36,7 @@ const elements = {
     recordDiscardBtn: document.getElementById("record-discard-btn"),
     recordingStatus: document.getElementById("recording-status"),
     recordingPreview: document.getElementById("recording-preview"),
+    recordingWave: document.getElementById("recording-wave"),
     language: document.getElementById("language"),
     languageOptions: document.querySelectorAll(".language-option"),
     analyzeBtn: document.getElementById("analyze-btn"),
@@ -49,6 +51,12 @@ const elements = {
     actionItemsContent: document.getElementById("action-items-content"),
     keyDecisionsContent: document.getElementById("key-decisions-content"),
     openQuestionsContent: document.getElementById("open-questions-content"),
+    resultViews: document.querySelectorAll(".result-view"),
+    resultNavButtons: document.querySelectorAll(".result-nav-btn"),
+    resultModal: document.getElementById("result-modal"),
+    resultModalTitle: document.getElementById("result-modal-title"),
+    resultModalCloseButtons: document.querySelectorAll("[data-modal-close]"),
+    startNewBtn: document.getElementById("start-new-btn"),
     chatHistory: document.getElementById("chat-history"),
     chatForm: document.getElementById("chat-form"),
     chatInput: document.getElementById("chat-input"),
@@ -129,23 +137,107 @@ function updateResultVisibility(hasResult) {
     elements.resultsSection.classList.toggle("hidden", !hasResult);
 }
 
+function updateInputVisibility(hasResult) {
+    elements.emptyState.classList.toggle("hidden", hasResult && !state.inputRevealed);
+}
+
 function setText(el, value) {
     el.textContent = value || "";
+}
+
+function setupRecordingWave() {
+    if (!elements.recordingWave || elements.recordingWave.children.length) {
+        return;
+    }
+
+    for (let index = 0; index < 28; index += 1) {
+        const bar = document.createElement("span");
+        bar.className = "recording-wave-bar";
+        bar.style.height = "8px";
+        elements.recordingWave.appendChild(bar);
+    }
+}
+
+function setRecordingWaveVisible(visible) {
+    elements.recordingWave.classList.toggle("hidden", !visible);
+}
+
+function updateRecordingWave(samples) {
+    if (!elements.recordingWave || elements.recordingWave.classList.contains("hidden")) {
+        return;
+    }
+
+    const bars = Array.from(elements.recordingWave.children);
+    if (!bars.length) {
+        return;
+    }
+
+    const chunkSize = Math.max(1, Math.floor(samples.length / bars.length));
+    bars.forEach((bar, index) => {
+        let sum = 0;
+        const start = index * chunkSize;
+        const end = Math.min(samples.length, start + chunkSize);
+        for (let sampleIndex = start; sampleIndex < end; sampleIndex += 1) {
+            sum += Math.abs(samples[sampleIndex]);
+        }
+        const average = sum / Math.max(1, end - start);
+        const height = Math.max(6, Math.min(34, Math.round(6 + average * 150)));
+        bar.style.height = `${height}px`;
+    });
 }
 
 function renderResult(result) {
     if (!result) {
         updateResultVisibility(false);
+        updateInputVisibility(false);
         return;
     }
 
     updateResultVisibility(true);
+    updateInputVisibility(true);
     setText(elements.resultTitle, result.title || "Untitled Session");
     setText(elements.summaryContent, result.summary || "");
     setText(elements.transcriptContent, result.transcript || "");
     setText(elements.actionItemsContent, result.action_items || "");
     setText(elements.keyDecisionsContent, result.key_decisions || "");
     setText(elements.openQuestionsContent, result.open_questions || "");
+}
+
+function revealInputPanel() {
+    elements.source.value = "";
+    elements.mediaFile.value = "";
+    elements.fileName.textContent = "No file selected";
+    clearRecording();
+    state.inputRevealed = true;
+    updateInputVisibility(true);
+    elements.emptyState.scrollIntoView({ behavior: "smooth", block: "start" });
+    elements.source.focus();
+}
+
+function closeResultModal() {
+    elements.resultModal.classList.add("hidden");
+    elements.resultModal.setAttribute("aria-hidden", "true");
+
+    elements.resultNavButtons.forEach((button) => {
+        button.classList.remove("active");
+    });
+}
+
+function openResultModal(target) {
+    elements.resultViews.forEach((view) => {
+        const isActive = view.dataset.resultView === target;
+        view.classList.toggle("active", isActive);
+        if (isActive) {
+            elements.resultModalTitle.textContent = view.dataset.resultTitle || "Meeting Detail";
+        }
+    });
+
+    elements.resultNavButtons.forEach((button) => {
+        button.classList.toggle("active", button.dataset.resultTarget === target);
+    });
+
+    elements.resultModal.classList.remove("hidden");
+    elements.resultModal.setAttribute("aria-hidden", "false");
 }
 
 function renderChat(chatHistory = []) {
@@ -328,6 +420,10 @@ async function postAnalyze(source, language, file) {
 }
 
 function clearRecording() {
+    if (state.recording) {
+        resetRecordingNodes();
+    }
+
     if (state.recordingUrl) {
         URL.revokeObjectURL(state.recordingUrl);
     }
@@ -337,6 +433,7 @@ function clearRecording() {
     state.recordingUrl = "";
     elements.recordingPreview.removeAttribute("src");
     elements.recordingPreview.classList.add("hidden");
+    setRecordingWaveVisible(false);
     elements.recordingStatus.textContent = "No microphone recording yet.";
     setProcessingUI(state.processing);
 }
@@ -444,6 +541,7 @@ async function startRecording() {
         state.recordingSampleRate = audioContext.sampleRate;
         state.recordedChunks = [];
         elements.recordingStatus.textContent = "Recording... speak now.";
+        setRecordingWaveVisible(true);
         setProcessingUI(state.processing);
 
         processor.onaudioprocess = (event) => {
@@ -453,6 +551,7 @@ async function startRecording() {
 
             const input = event.inputBuffer.getChannelData(0);
             state.recordedChunks.push(new Float32Array(input));
+            updateRecordingWave(input);
         };
 
         source.connect(processor);
@@ -472,6 +571,7 @@ function stopRecording() {
     }
 
     elements.recordingStatus.textContent = "Preparing recording...";
+    setRecordingWaveVisible(false);
 
     const samples = mergeAudioChunks(state.recordedChunks);
     const blob = encodeWav(samples, state.recordingSampleRate || 44100);
@@ -503,6 +603,8 @@ elements.analyzeForm.addEventListener("submit", async (event) => {
     try {
         setMessage("Starting pipeline...", "info");
         setProcessingUI(true);
+        state.inputRevealed = false;
+        updateInputVisibility(Boolean(!elements.resultsSection.classList.contains("hidden")));
         renderPipelineSteps({}, {});
         const data = await postAnalyze(source, language, file);
         if (data.run_id) {
@@ -576,7 +678,26 @@ elements.languageOptions.forEach((option) => {
     });
 });
 
+elements.resultNavButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+        openResultModal(button.dataset.resultTarget);
+    });
+});
+
+elements.resultModalCloseButtons.forEach((button) => {
+    button.addEventListener("click", closeResultModal);
+});
+
+elements.startNewBtn.addEventListener("click", revealInputPanel);
+
+window.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !elements.resultModal.classList.contains("hidden")) {
+        closeResultModal();
+    }
+});
+
 window.addEventListener("load", async () => {
+    setupRecordingWave();
     renderPipelineSteps({}, {});
     syncLanguageToggle(elements.language.value);
     try {

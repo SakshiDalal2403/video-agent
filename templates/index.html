@@ -34,7 +34,7 @@
             <section class="hero panel hero-panel">
                 <div class="hero-copy">
                     <p class="eyebrow">Meeting Intelligence</p>
-                    <h2>Analyze, summarize, and chat with any video transcript.</h2>
+                    <h2>Analyze any meeting video.</h2>
                 </div>
                 <div class="hero-badges">
                     <span>Transcription</span>
@@ -55,10 +55,10 @@
 
                     <label class="field">
                         <span>YouTube URL, file path, or upload</span>
-                        <textarea id="source" name="source" rows="4" placeholder="https://youtube.com/watch?v=... or C:\path\to\audio.mp3"></textarea>
+                        <textarea id="source" name="source" rows="4" placeholder="Paste a YouTube URL or local file path"></textarea>
                         <input id="media-file" name="file" class="file-input" type="file" accept="audio/*,video/*,.mp3,.mp4,.m4a,.wav,.aac,.flac,.ogg,.webm,.wma,.mov,.mkv,.avi">
                         <label for="media-file" class="file-picker">
-                            <span>Choose audio/video file</span>
+                            <span>Choose file</span>
                             <strong id="file-name">No file selected</strong>
                         </label>
                         <button type="submit" class="primary-btn" id="analyze-btn">Analyze Video</button>
@@ -71,6 +71,7 @@
                             <button type="button" class="ghost-btn" id="record-stop-btn" disabled>Stop Recording</button>
                             <button type="button" class="ghost-btn" id="record-discard-btn" disabled>Discard</button>
                         </div>
+                        <div id="recording-wave" class="recording-wave hidden" aria-hidden="true"></div>
                         <div class="recording-status" id="recording-status">No microphone recording yet.</div>
                         <audio id="recording-preview" class="recording-preview hidden" controls></audio>
                     </div>
@@ -95,42 +96,57 @@
                     <h3 id="result-title">Untitled Session</h3>
                 </div>
 
-                <div class="results-grid top-grid">
-                    <article class="panel result-card">
-                        <div class="card-head">
-                            <p class="panel-kicker">Summary</p>
-                        </div>
-                        <div id="summary-content" class="text-block"></div>
-                    </article>
+                <article class="panel result-card summary-card">
+                    <div class="card-head">
+                        <p class="panel-kicker">Summary</p>
+                    </div>
+                    <div id="summary-content" class="text-block"></div>
+                </article>
 
-                    <article class="panel result-card transcript-card">
-                        <details open>
-                            <summary>Full Transcript</summary>
-                            <div id="transcript-content" class="text-block transcript-block"></div>
-                        </details>
-                    </article>
-                </div>
+                <aside class="panel results-nav" aria-label="Meeting result sections">
+                    <p class="panel-kicker">Review</p>
+                    <button id="start-new-btn" class="start-new-btn" type="button">
+                        Start New
+                    </button>
+                    <button class="result-nav-btn" type="button" data-result-target="transcript">
+                        <span>Full Transcript</span>
+                    </button>
+                    <button class="result-nav-btn" type="button" data-result-target="actions">
+                        <span>Action Items</span>
+                    </button>
+                    <button class="result-nav-btn" type="button" data-result-target="decisions">
+                        <span>Key Decisions</span>
+                    </button>
+                    <button class="result-nav-btn" type="button" data-result-target="questions">
+                        <span>Open Questions</span>
+                    </button>
+                </aside>
 
-                <div class="results-grid bottom-grid">
-                    <article class="panel result-card">
-                        <div class="card-head">
-                            <p class="panel-kicker">Action Items</p>
+                <div id="result-modal" class="result-modal hidden" aria-hidden="true">
+                    <div class="result-modal-backdrop" data-modal-close></div>
+                    <article class="panel result-modal-panel" role="dialog" aria-modal="true" aria-labelledby="result-modal-title">
+                        <div class="result-modal-header">
+                            <div>
+                                <p class="panel-kicker">Review</p>
+                                <h3 id="result-modal-title">Meeting Detail</h3>
+                            </div>
+                            <button class="ghost-btn result-modal-close" type="button" data-modal-close>Close</button>
                         </div>
-                        <div id="action-items-content" class="text-block"></div>
-                    </article>
 
-                    <article class="panel result-card">
-                        <div class="card-head">
-                            <p class="panel-kicker">Key Decisions</p>
+                        <div class="result-modal-body">
+                            <section class="result-view" data-result-view="transcript" data-result-title="Full Transcript">
+                                <div id="transcript-content" class="text-block transcript-block"></div>
+                            </section>
+                            <section class="result-view" data-result-view="actions" data-result-title="Action Items">
+                                <div id="action-items-content" class="text-block"></div>
+                            </section>
+                            <section class="result-view" data-result-view="decisions" data-result-title="Key Decisions">
+                                <div id="key-decisions-content" class="text-block"></div>
+                            </section>
+                            <section class="result-view" data-result-view="questions" data-result-title="Open Questions">
+                                <div id="open-questions-content" class="text-block"></div>
+                            </section>
                         </div>
-                        <div id="key-decisions-content" class="text-block"></div>
-                    </article>
-
-                    <article class="panel result-card">
-                        <div class="card-head">
-                            <p class="panel-kicker">Open Questions</p>
-                        </div>
-                        <div id="open-questions-content" class="text-block"></div>
                     </article>
                 </div>
 
