@@ -41,8 +41,10 @@ const elements = {
     languageOptions: document.querySelectorAll(".language-option"),
     analyzeBtn: document.getElementById("analyze-btn"),
     statusChip: document.getElementById("status-chip"),
+    pipelineStarting: document.getElementById("pipeline-starting"),
     pipelineSteps: document.getElementById("pipeline-steps"),
     messageBar: document.getElementById("message-bar"),
+    processingState: document.getElementById("processing-state"),
     emptyState: document.getElementById("empty-state"),
     resultsSection: document.getElementById("results-section"),
     resultTitle: document.getElementById("result-title"),
@@ -62,6 +64,10 @@ const elements = {
     chatInput: document.getElementById("chat-input"),
     sendBtn: document.getElementById("send-btn"),
     clearChatBtn: document.getElementById("clear-chat-btn"),
+    inlineTranscript: document.getElementById("inline-transcript"),
+    inlineTranscriptContent: document.getElementById("inline-transcript-content"),
+    transcriptToggleBtn: document.getElementById("transcript-toggle-btn"),
+    heroPanel: document.getElementById("hero-panel"),
 };
 
 const pipelineIcons = {
@@ -102,6 +108,15 @@ function renderPipelineSteps(stepState = {}, labels = {}) {
     const order = ["audio", "transcript", "title", "summary", "extract", "rag"];
     elements.pipelineSteps.innerHTML = "";
 
+    // Check if any step has real progress yet
+    const hasProgress = order.some((key) => stepState[key] === "active" || stepState[key] === "done");
+
+    if (hasProgress) {
+        // Real step data arrived — swap starting message for actual steps
+        elements.pipelineStarting.classList.add("hidden");
+        elements.pipelineSteps.classList.remove("hidden");
+    }
+
     order.forEach((key) => {
         const status = stepState[key] || "pending";
         const card = document.createElement("div");
@@ -122,7 +137,13 @@ function renderPipelineSteps(stepState = {}, labels = {}) {
 
         const sub = document.createElement("div");
         sub.className = "pipeline-step-state";
-        sub.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+        if (status === "active") {
+            sub.textContent = "In progress";
+        } else if (status === "done") {
+            sub.textContent = "Done";
+        } else {
+            sub.textContent = "Waiting";
+        }
 
         textWrap.appendChild(title);
         textWrap.appendChild(sub);
@@ -135,14 +156,82 @@ function renderPipelineSteps(stepState = {}, labels = {}) {
 
 function updateResultVisibility(hasResult) {
     elements.resultsSection.classList.toggle("hidden", !hasResult);
+    if (elements.heroPanel) {
+        elements.heroPanel.classList.toggle("hidden", hasResult);
+    }
 }
 
-function updateInputVisibility(hasResult) {
-    elements.emptyState.classList.toggle("hidden", hasResult && !state.inputRevealed);
+function updateProcessingVisibility(processing) {
+    elements.processingState.classList.toggle("hidden", !processing);
+}
+
+function updateInputVisibility(hasResult, processing = state.processing) {
+    elements.emptyState.classList.toggle("hidden", processing || (hasResult && !state.inputRevealed));
 }
 
 function setText(el, value) {
-    el.textContent = value || "";
+    if (el) {
+        el.textContent = value || "";
+    }
+}
+
+function parseMarkdown(text) {
+    if (!text) {
+        return "";
+    }
+
+    // Escape HTML first to prevent XSS
+    let html = text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+
+    // Replace bold text **bold** with <strong>bold</strong>
+    html = html.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+
+    // Split text by lines to parse lists
+    const lines = html.split("\n");
+    const processedLines = [];
+    let insideList = false;
+
+    lines.forEach((line) => {
+        const trimmed = line.trim();
+        // Check if line starts with markdown bullets "- " or "* "
+        if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
+            const isSub = line.startsWith("  ") || line.startsWith("\t");
+            const content = trimmed.substring(2);
+            
+            if (!insideList) {
+                processedLines.push('<ul class="markdown-list">');
+                insideList = true;
+            }
+            
+            processedLines.push(`<li class="${isSub ? 'sub-bullet' : 'main-bullet'}">${content}</li>`);
+        } else {
+            if (insideList) {
+                processedLines.push("</ul>");
+                insideList = false;
+            }
+            
+            if (trimmed) {
+                processedLines.push(`<p class="markdown-para">${line}</p>`);
+            } else {
+                processedLines.push('<div class="markdown-space"></div>');
+            }
+        }
+    });
+
+    if (insideList) {
+        processedLines.push("</ul>");
+    }
+
+    return processedLines.join("\n");
+}
+
+function setHTMLContent(el, value) {
+    if (el) {
+        el.innerHTML = parseMarkdown(value);
+    }
 }
 
 function setupRecordingWave() {
@@ -196,11 +285,17 @@ function renderResult(result) {
     updateResultVisibility(true);
     updateInputVisibility(true);
     setText(elements.resultTitle, result.title || "Untitled Session");
-    setText(elements.summaryContent, result.summary || "");
+    setHTMLContent(elements.summaryContent, result.summary || "");
     setText(elements.transcriptContent, result.transcript || "");
-    setText(elements.actionItemsContent, result.action_items || "");
-    setText(elements.keyDecisionsContent, result.key_decisions || "");
-    setText(elements.openQuestionsContent, result.open_questions || "");
+    setText(elements.inlineTranscriptContent, result.transcript || "");
+    setHTMLContent(elements.actionItemsContent, result.action_items || "");
+    setHTMLContent(elements.keyDecisionsContent, result.key_decisions || "");
+    setHTMLContent(elements.openQuestionsContent, result.open_questions || "");
+
+    // Reset transcript toggle to collapsed state on new result
+    elements.inlineTranscript.classList.add("hidden");
+    elements.transcriptToggleBtn.classList.remove("active");
+    elements.transcriptToggleBtn.textContent = "Show Transcript";
 }
 
 function revealInputPanel() {
@@ -209,7 +304,8 @@ function revealInputPanel() {
     elements.fileName.textContent = "No file selected";
     clearRecording();
     state.inputRevealed = true;
-    updateInputVisibility(true);
+    updateInputVisibility(true, false);
+    updateProcessingVisibility(false);
     elements.emptyState.scrollIntoView({ behavior: "smooth", block: "start" });
     elements.source.focus();
 }
@@ -309,6 +405,8 @@ function applyState(data) {
     renderPipelineSteps(data.pipeline_steps, data.pipeline_labels);
     renderResult(data.result);
     renderChat(data.chat_history);
+    updateProcessingVisibility(Boolean(data.processing));
+    updateInputVisibility(Boolean(data.result), Boolean(data.processing));
 
     if (data.error) {
         setMessage(data.error, "error");
@@ -317,7 +415,7 @@ function applyState(data) {
         setMessage("Pipeline running. The UI is polling live step status.", "info");
         setStatusChip("running", "Running");
     } else if (data.pipeline_done) {
-        setMessage("Analysis complete. You can now review the results and chat with the transcript.", "info");
+        setMessage("", "info");
         setStatusChip("done", "Done");
     } else {
         setMessage("", "info");
@@ -604,8 +702,13 @@ elements.analyzeForm.addEventListener("submit", async (event) => {
         setMessage("Starting pipeline...", "info");
         setProcessingUI(true);
         state.inputRevealed = false;
-        updateInputVisibility(Boolean(!elements.resultsSection.classList.contains("hidden")));
-        renderPipelineSteps({}, {});
+        updateResultVisibility(false);
+        updateInputVisibility(false, true);
+        updateProcessingVisibility(true);
+        // Show "getting started" message; hide steps until real progress arrives
+        elements.pipelineStarting.classList.remove("hidden");
+        elements.pipelineSteps.classList.add("hidden");
+        elements.pipelineSteps.innerHTML = "";
         const data = await postAnalyze(source, language, file);
         if (data.run_id) {
             state.activeRunId = data.run_id;
@@ -690,6 +793,13 @@ elements.resultModalCloseButtons.forEach((button) => {
 
 elements.startNewBtn.addEventListener("click", revealInputPanel);
 
+elements.transcriptToggleBtn.addEventListener("click", () => {
+    const isHidden = elements.inlineTranscript.classList.contains("hidden");
+    elements.inlineTranscript.classList.toggle("hidden");
+    elements.transcriptToggleBtn.classList.toggle("active", isHidden);
+    elements.transcriptToggleBtn.textContent = isHidden ? "Hide Transcript" : "Show Transcript";
+});
+
 window.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && !elements.resultModal.classList.contains("hidden")) {
         closeResultModal();
@@ -705,5 +815,121 @@ window.addEventListener("load", async () => {
     } catch (error) {
         setMessage("Unable to load app state.", "error");
         setStatusChip("error", "Error");
+    }
+});
+
+async function copyToClipboard(text, buttonEl) {
+    try {
+        await navigator.clipboard.writeText(text);
+        
+        const iconCopy = buttonEl.querySelector(".icon-copy");
+        const iconCheck = buttonEl.querySelector(".icon-check");
+        if (iconCopy && iconCheck) {
+            iconCopy.classList.add("hidden");
+            iconCheck.classList.remove("hidden");
+            buttonEl.classList.add("copied");
+            
+            setTimeout(() => {
+                iconCopy.classList.remove("hidden");
+                iconCheck.classList.add("hidden");
+                buttonEl.classList.remove("copied");
+            }, 2000);
+        }
+    } catch (err) {
+        console.error("Failed to copy text: ", err);
+        setMessage("Failed to copy text to clipboard.", "error");
+    }
+}
+
+function downloadAsPDF(type) {
+    if (!window.jspdf) {
+        setMessage("PDF library is not loaded yet. Please try again in a moment.", "error");
+        return;
+    }
+
+    let titleText = "";
+    let contentText = "";
+    const sessionTitle = (elements.resultTitle ? elements.resultTitle.textContent : "Untitled Session") || "Untitled Session";
+
+    if (type === "summary") {
+        titleText = `Summary - ${sessionTitle}`;
+        contentText = elements.summaryContent ? elements.summaryContent.textContent : "";
+    } else if (type === "transcript") {
+        titleText = `Transcript - ${sessionTitle}`;
+        contentText = elements.inlineTranscriptContent ? elements.inlineTranscriptContent.textContent : "";
+    }
+
+    if (!contentText) {
+        setMessage("No content to export.", "error");
+        return;
+    }
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.setTextColor(16, 163, 127);
+    doc.text(titleText, 14, 22);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(120);
+    const dateStr = new Date().toLocaleString();
+    doc.text(`AI Video Assistant | Exported on ${dateStr}`, 14, 28);
+    doc.line(14, 32, 196, 32);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10.5);
+    doc.setTextColor(40);
+
+    const splitText = doc.splitTextToSize(contentText, 180);
+    let y = 40;
+    const pageHeight = doc.internal.pageSize.height;
+
+    for (let i = 0; i < splitText.length; i++) {
+        if (y > pageHeight - 20) {
+            doc.addPage();
+            y = 20;
+        }
+        doc.text(splitText[i], 14, y);
+        y += 6.5;
+    }
+
+    const filename = `${type}_${sessionTitle.toLowerCase().replace(/[^a-z0-9]+/g, "_")}.pdf`;
+    doc.save(filename);
+    setMessage(`${type.charAt(0).toUpperCase() + type.slice(1)} PDF downloaded successfully.`, "info");
+}
+
+// Attach Copy and PDF handlers
+document.addEventListener("click", (event) => {
+    const copyBtn = event.target.closest(".copy-btn");
+    if (copyBtn) {
+        if (copyBtn.id === "modal-copy-btn") {
+            const activeView = document.querySelector(".result-view.active");
+            if (activeView) {
+                const textBlock = activeView.querySelector(".text-block");
+                if (textBlock) {
+                    copyToClipboard(textBlock.textContent || textBlock.innerText, copyBtn);
+                }
+            }
+        } else {
+            const targetId = copyBtn.getAttribute("data-copy-target");
+            if (targetId) {
+                const targetEl = document.getElementById(targetId);
+                if (targetEl) {
+                    copyToClipboard(targetEl.textContent || targetEl.innerText, copyBtn);
+                }
+            }
+        }
+        return;
+    }
+
+    const pdfBtn = event.target.closest(".pdf-btn");
+    if (pdfBtn) {
+        const type = pdfBtn.getAttribute("data-pdf-type");
+        if (type) {
+            downloadAsPDF(type);
+        }
     }
 });

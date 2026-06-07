@@ -1612,3 +1612,501 @@ body {
         width: 100%;
     }
 }
+
+/* Centered workflow layout: removes the left pipeline rail while keeping backend IDs intact. */
+.app-shell {
+    display: block;
+    min-height: 100vh;
+}
+
+.main-content {
+    width: min(1180px, 100%);
+    max-width: none;
+    min-height: 100vh;
+    margin: 0 auto;
+    padding: 22px;
+}
+
+.topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 48px;
+}
+
+.topbar .brand {
+    min-height: 0;
+}
+
+.hero-panel {
+    order: 1;
+}
+
+.message-bar {
+    order: 2;
+}
+
+/* ── Pipeline "getting started" message ─────────────────────────────────── */
+.pipeline-starting {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    padding: 6px 0 2px;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    letter-spacing: 0.06em;
+}
+
+.pipeline-starting-dots::after {
+    content: "";
+    animation: dotdotdot 1.6s steps(4, end) infinite;
+}
+
+@keyframes dotdotdot {
+    0%   { content: ""; }
+    25%  { content: "."; }
+    50%  { content: ".."; }
+    75%  { content: "..."; }
+    100% { content: "...."; }
+}
+
+/* ── Processing overlay modal ───────────────────────────────────────────── */
+.processing-state {
+    /* Fullscreen overlay – sits above everything */
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+
+    /* Blurred, dimmed backdrop */
+    background: rgba(7, 9, 12, 0.72);
+    backdrop-filter: blur(14px) brightness(0.55);
+    -webkit-backdrop-filter: blur(14px) brightness(0.55);
+
+    /* Smooth fade-in / fade-out */
+    opacity: 1;
+    transition: opacity 0.22s ease;
+}
+
+.processing-state.hidden {
+    /* Override the global display:none so the fade-out still plays.
+       We keep it visually invisible instead. */
+    display: flex !important;
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* The floating popup card */
+.processing-state-card {
+    position: relative;
+    width: min(520px, 100%);
+    padding: 28px 24px 24px;
+    border-radius: 18px;
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    box-shadow: 0 32px 80px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(20, 184, 166, 0.12);
+    display: grid;
+    gap: 20px;
+    justify-items: center;
+    animation: popIn 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes popIn {
+    from { transform: scale(0.88) translateY(12px); opacity: 0; }
+    to   { transform: scale(1)    translateY(0);    opacity: 1; }
+}
+
+.processing-copy {
+    text-align: center;
+}
+
+.processing-copy h3 {
+    margin: 6px 0 0;
+    font-size: clamp(1.1rem, 2vw, 1.45rem);
+    line-height: 1.2;
+}
+
+/* Spinner ring */
+.processing-orbit {
+    position: relative;
+    width: 62px;
+    height: 62px;
+    border-radius: 999px;
+    border: 1px solid rgba(20, 184, 166, 0.22);
+    display: grid;
+    place-items: center;
+    background: rgba(20, 184, 166, 0.07);
+}
+
+.processing-orbit::before {
+    content: "";
+    position: absolute;
+    inset: 7px;
+    border-radius: inherit;
+    border: 3px solid rgba(20, 184, 166, 0.18);
+    border-top-color: var(--accent);
+    animation: spin 1s linear infinite;
+}
+
+.processing-orbit span {
+    width: 14px;
+    height: 14px;
+    border-radius: 999px;
+    background: var(--accent);
+    box-shadow: 0 0 22px rgba(20, 184, 166, 0.55);
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Pipeline steps inside the popup */
+.processing-state .pipeline-steps {
+    width: 100%;
+    margin-top: 0;
+    gap: 8px;
+    grid-template-columns: 1fr;
+    padding-left: 0;
+}
+
+.processing-state .pipeline-step {
+    min-height: 52px;
+    padding: 10px 12px;
+    background: var(--surface-soft);
+}
+
+.processing-state .pipeline-step-title {
+    white-space: normal;
+    font-size: 0.92rem;
+}
+
+.processing-state .step-marker {
+    width: 32px;
+    height: 32px;
+    border-radius: 999px;
+    font-size: 0;
+}
+
+.processing-state .step-marker::before {
+    font-size: 0.78rem;
+    font-family: "IBM Plex Mono", monospace;
+    font-weight: 800;
+}
+
+.processing-state .pipeline-step:nth-child(1) .step-marker::before { content: "A"; }
+.processing-state .pipeline-step:nth-child(2) .step-marker::before { content: "T"; }
+.processing-state .pipeline-step:nth-child(3) .step-marker::before { content: "#"; }
+.processing-state .pipeline-step:nth-child(4) .step-marker::before { content: "S"; }
+.processing-state .pipeline-step:nth-child(5) .step-marker::before { content: "E"; }
+.processing-state .pipeline-step:nth-child(6) .step-marker::before { content: "R"; }
+
+.processing-state .pipeline-step.active .step-marker::before {
+    content: "";
+    width: 14px;
+    height: 14px;
+    border-radius: 999px;
+    border: 2px solid rgba(6, 17, 14, 0.24);
+    border-top-color: #06110e;
+    animation: spin 0.8s linear infinite;
+}
+
+.processing-state .pipeline-step.done .step-marker::before {
+    content: "✓";
+    font-size: 0.92rem;
+}
+
+.empty-state {
+    order: 3;
+}
+
+.results {
+    order: 4;
+}
+
+@media (min-width: 1181px) {
+    .main-content:has(#results-section:not(.hidden)) {
+        width: 100%;
+        padding-right: 300px;
+    }
+}
+
+@media (max-width: 860px) {
+    .main-content {
+        padding: 14px;
+    }
+
+    .processing-state-card {
+        padding: 22px 16px 18px;
+    }
+}
+
+/* ── Remove sidebar right-padding (sidebar is gone) ──────────────────────── */
+@media (min-width: 1181px) {
+    .main-content:has(#results-section:not(.hidden)) {
+        padding-right: 22px;
+    }
+}
+
+/* ── Start New button in topbar ──────────────────────────────────────────── */
+.start-new-topbar-btn {
+    flex: 0 0 auto;
+    min-height: 36px;
+    padding: 8px 16px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text);
+    font-size: 0.88rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.16s ease, border-color 0.16s ease, transform 0.16s ease;
+}
+
+.start-new-topbar-btn:hover {
+    background: var(--surface-soft);
+    border-color: var(--accent);
+    transform: translateY(-1px);
+}
+
+/* ── Transcript toggle button inside summary card header ─────────────────── */
+.transcript-toggle-btn {
+    font-size: 0.82rem;
+    padding: 6px 12px;
+    min-height: 32px;
+    border-color: var(--border);
+    color: var(--text-muted);
+    transition: background 0.16s ease, color 0.16s ease, border-color 0.16s ease;
+}
+
+.transcript-toggle-btn:hover,
+.transcript-toggle-btn.active {
+    color: var(--accent);
+    border-color: rgba(20, 184, 166, 0.4);
+    background: rgba(20, 184, 166, 0.07);
+}
+
+/* ── Inline transcript collapsible ───────────────────────────────────────── */
+.inline-transcript {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 340px;
+    overflow: hidden;
+    animation: expandDown 0.22s ease both;
+}
+
+.inline-transcript-label {
+    margin: 0;
+}
+
+.inline-transcript .text-block {
+    max-height: 280px;
+    overflow-y: auto;
+}
+
+@keyframes expandDown {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Summary action buttons row ──────────────────────────────────────────── */
+.summary-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+}
+
+.summary-action-btn {
+    flex: 1 1 0;
+    min-width: 120px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-align: center;
+    font-size: 0.88rem;
+}
+
+.summary-action-btn.active {
+    border-color: rgba(20, 184, 166, 0.36);
+    background: rgba(20, 184, 166, 0.11);
+    color: var(--text);
+}
+
+.summary-action-btn.active::after {
+    display: none;
+}
+
+.summary-action-btn svg.btn-icon {
+    flex: 0 0 auto;
+    color: var(--text-muted);
+    transition: color 0.16s ease;
+}
+
+.summary-action-btn:hover svg.btn-icon,
+.summary-action-btn.active svg.btn-icon {
+    color: var(--accent);
+}
+
+
+@media (max-width: 560px) {
+    .summary-actions {
+        flex-direction: column;
+    }
+    .summary-action-btn {
+        width: 100%;
+    }
+}
+
+
+@media (max-width: 560px) {
+    .processing-state {
+        padding: 14px;
+    }
+
+    .processing-state-card {
+        padding: 20px 14px 16px;
+    }
+}
+
+/* ── Copy and Share Action Button Styling ────────────────────────── */
+.card-title-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.inline-transcript-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.card-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.modal-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.action-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-sm);
+    background: var(--surface-soft);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: background 0.16s ease, color 0.16s ease, border-color 0.16s ease, transform 0.12s ease;
+    padding: 0;
+}
+
+.action-icon-btn:hover {
+    background: var(--surface-muted);
+    color: var(--accent);
+    border-color: rgba(20, 184, 166, 0.45);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(20, 184, 166, 0.15);
+}
+
+.action-icon-btn:active {
+    transform: translateY(0);
+}
+
+.action-icon-btn svg {
+    pointer-events: none;
+    transition: transform 0.16s ease;
+}
+
+.action-icon-btn.copied {
+    border-color: rgba(84, 211, 138, 0.4);
+    background: rgba(84, 211, 138, 0.08);
+}
+
+.action-icon-btn .icon-check {
+    color: var(--success);
+}
+
+/* Ensure card-head flex behaves correctly */
+.card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+/* ── Markdown Rendering Styles ───────────────────────────────────── */
+.markdown-list {
+    margin: 8px 0;
+    padding-left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    list-style-type: none; /* remove native list style to use custom bullets or styling if preferred, or keep disc */
+}
+
+.main-bullet {
+    position: relative;
+    line-height: 1.6;
+    color: var(--text);
+    padding-left: 14px;
+}
+
+.main-bullet::before {
+    content: "•";
+    position: absolute;
+    left: 0;
+    color: var(--accent);
+    font-weight: bold;
+}
+
+.sub-bullet {
+    position: relative;
+    margin-left: 16px;
+    line-height: 1.6;
+    color: var(--text-muted);
+    padding-left: 14px;
+}
+
+.sub-bullet::before {
+    content: "◦";
+    position: absolute;
+    left: 0;
+    color: var(--text-muted);
+}
+
+.markdown-para {
+    margin: 8px 0;
+    line-height: 1.6;
+}
+
+.markdown-space {
+    height: 12px;
+}
+
+strong {
+    color: #ffffff;
+    font-weight: 700;
+}
+
+

@@ -8,30 +8,23 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
     <div class="app-shell">
-        <aside class="sidebar">
-            <div class="brand">
-                <div class="brand-mark">VA</div>
-                <div>
-                    <p class="eyebrow">AI Video Assistant</p>
-                    <h1>Video Intelligence</h1>
-                </div>
-            </div>
-
-            <section class="panel status-panel">
-                <div class="panel-header">
-                    <span class="panel-kicker">Pipeline</span>
-                    <span class="panel-caption">Live step status</span>
-                </div>
-
-                <div id="pipeline-steps" class="pipeline-steps"></div>
-            </section>
-        </aside>
-
         <main class="main-content">
-            <section class="hero panel hero-panel">
+            <header class="topbar">
+                <div class="brand">
+                    <div class="brand-mark">VA</div>
+                    <div>
+                        <p class="eyebrow">AI Video Assistant</p>
+                        <h1>Video Intelligence</h1>
+                    </div>
+                </div>
+                <button id="start-new-btn" class="start-new-topbar-btn" type="button">Start New</button>
+            </header>
+
+            <section id="hero-panel" class="hero panel hero-panel">
                 <div class="hero-copy">
                     <p class="eyebrow">Meeting Intelligence</p>
                     <h2>Analyze any meeting video.</h2>
@@ -45,6 +38,23 @@
             </section>
 
             <section id="message-bar" class="message-bar hidden"></section>
+
+            <section id="processing-state" class="processing-state hidden" aria-live="polite">
+                <div class="processing-state-card">
+                    <div class="processing-orbit" aria-hidden="true">
+                        <span></span>
+                    </div>
+                    <div class="processing-copy">
+                        <p class="panel-kicker">Pipeline Running</p>
+                        <h3>Preparing your meeting intelligence</h3>
+                    </div>
+                    <div id="pipeline-starting" class="pipeline-starting hidden">
+                        <span class="pipeline-starting-text">Pipeline getting started</span><span class="pipeline-starting-dots"></span>
+                    </div>
+                    <div id="pipeline-steps" class="pipeline-steps hidden"></div>
+                </div>
+            </section>
+
 
             <section id="empty-state" class="panel empty-state">
                 <form id="analyze-form" class="input-panel">
@@ -98,29 +108,53 @@
 
                 <article class="panel result-card summary-card">
                     <div class="card-head">
-                        <p class="panel-kicker">Summary</p>
+                        <div class="card-title-group">
+                            <p class="panel-kicker">Summary</p>
+                            <div class="card-actions">
+                                <button class="action-icon-btn copy-btn" data-copy-target="summary-content" title="Copy Summary" type="button">
+                                    <svg class="icon-copy" viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+                                    <svg class="icon-check hidden" viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="3" d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>
+                                </button>
+                                <button class="action-icon-btn pdf-btn" data-pdf-type="summary" title="Download Summary PDF" type="button">
+                                    <svg class="icon-pdf" viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5zM9 8.5V10h1V8.5H9zm6 1.5V8.5h1V10h-1zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6z"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                        <button id="transcript-toggle-btn" class="ghost-btn transcript-toggle-btn" type="button">Show Transcript</button>
                     </div>
                     <div id="summary-content" class="text-block"></div>
-                </article>
 
-                <aside class="panel results-nav" aria-label="Meeting result sections">
-                    <p class="panel-kicker">Review</p>
-                    <button id="start-new-btn" class="start-new-btn" type="button">
-                        Start New
-                    </button>
-                    <button class="result-nav-btn" type="button" data-result-target="transcript">
-                        <span>Full Transcript</span>
-                    </button>
-                    <button class="result-nav-btn" type="button" data-result-target="actions">
-                        <span>Action Items</span>
-                    </button>
-                    <button class="result-nav-btn" type="button" data-result-target="decisions">
-                        <span>Key Decisions</span>
-                    </button>
-                    <button class="result-nav-btn" type="button" data-result-target="questions">
-                        <span>Open Questions</span>
-                    </button>
-                </aside>
+                    <div id="inline-transcript" class="inline-transcript hidden">
+                        <div class="inline-transcript-head">
+                            <p class="panel-kicker inline-transcript-label">Full Transcript</p>
+                            <div class="card-actions">
+                                <button class="action-icon-btn copy-btn" data-copy-target="inline-transcript-content" title="Copy Transcript" type="button">
+                                    <svg class="icon-copy" viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+                                    <svg class="icon-check hidden" viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="3" d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>
+                                </button>
+                                <button class="action-icon-btn pdf-btn" data-pdf-type="transcript" title="Download Transcript PDF" type="button">
+                                    <svg class="icon-pdf" viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5zM9 8.5V10h1V8.5H9zm6 1.5V8.5h1V10h-1zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6z"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div id="inline-transcript-content" class="text-block transcript-block"></div>
+                    </div>
+
+                    <div class="summary-actions">
+                        <button class="result-nav-btn summary-action-btn" type="button" data-result-target="actions">
+                            <svg class="btn-icon" viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                            <span>Action Items</span>
+                        </button>
+                        <button class="result-nav-btn summary-action-btn" type="button" data-result-target="decisions">
+                            <svg class="btn-icon" viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3M15.5 7.5L19 4"/></svg>
+                            <span>Key Decisions</span>
+                        </button>
+                        <button class="result-nav-btn summary-action-btn" type="button" data-result-target="questions">
+                            <svg class="btn-icon" viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2zM9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/></svg>
+                            <span>Open Questions</span>
+                        </button>
+                    </div>
+                </article>
 
                 <div id="result-modal" class="result-modal hidden" aria-hidden="true">
                     <div class="result-modal-backdrop" data-modal-close></div>
@@ -130,7 +164,13 @@
                                 <p class="panel-kicker">Review</p>
                                 <h3 id="result-modal-title">Meeting Detail</h3>
                             </div>
-                            <button class="ghost-btn result-modal-close" type="button" data-modal-close>Close</button>
+                            <div class="modal-actions">
+                                <button id="modal-copy-btn" class="action-icon-btn copy-btn" title="Copy Content" type="button">
+                                    <svg class="icon-copy" viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+                                    <svg class="icon-check hidden" viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="3" d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>
+                                </button>
+                                <button class="ghost-btn result-modal-close" type="button" data-modal-close>Close</button>
+                            </div>
                         </div>
 
                         <div class="result-modal-body">
