@@ -2131,22 +2131,8 @@ strong {
 .step-heading {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 12px;
-}
-
-.step-number {
-    width: 32px;
-    height: 32px;
-    flex: 0 0 auto;
-    display: grid;
-    place-items: center;
-    border-radius: 999px;
-    background: var(--surface-soft);
-    border: 1px solid var(--border-strong);
-    color: var(--text);
-    font-family: "IBM Plex Mono", monospace;
-    font-size: 0.82rem;
-    font-weight: 800;
 }
 
 .step-heading h3 {
@@ -2213,19 +2199,19 @@ strong {
 }
 
 .analyze-row {
-    display: grid;
-    grid-template-columns: minmax(220px, 380px) minmax(220px, 280px);
-    gap: 42px;
-    align-items: end;
+    display: flex;
+    justify-content: center;
 }
 
 .language-field {
     margin-top: 0;
+    width: min(100%, 360px);
 }
 
 .analyze-row .primary-btn {
     margin-top: 0;
     min-height: 48px;
+    width: min(100%, 280px);
 }
 
 .empty-state .workflow-step .field:first-of-type,
@@ -2290,12 +2276,21 @@ strong {
 }
 
 @media (max-width: 860px) {
-    .source-mode-grid,
-    .analyze-row {
+    .source-mode-grid {
         grid-template-columns: 1fr;
     }
 
     .source-mode-card {
         min-height: auto;
+    }
+
+    .step-heading {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .language-field,
+    .analyze-row .primary-btn {
+        width: 100%;
     }
 }

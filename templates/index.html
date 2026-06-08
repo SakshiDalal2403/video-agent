@@ -66,11 +66,21 @@
                     <div class="workflow-steps">
                         <section class="workflow-step">
                             <div class="step-heading">
-                                <span class="step-number">1</span>
                                 <div>
                                     <span class="panel-kicker">Choose Source</span>
                                     <h3>Pick where your meeting is coming from</h3>
                                 </div>
+                                <label class="field language-field">
+                                    <span>Language</span>
+                                    <div class="language-toggle" role="group" aria-label="Language">
+                                        <button type="button" class="language-option active" data-language="english">English</button>
+                                        <button type="button" class="language-option" data-language="hinglish">Hinglish</button>
+                                    </div>
+                                    <select id="language" name="language" class="native-language-select" aria-hidden="true" tabindex="-1">
+                                        <option value="english">English</option>
+                                        <option value="hinglish">Hinglish</option>
+                                    </select>
+                                </label>
                             </div>
 
                             <div class="source-mode-grid" role="group" aria-label="Input source">
@@ -91,7 +101,6 @@
 
                         <section class="workflow-step source-input-step hidden">
                             <div class="step-heading">
-                                <span class="step-number">2</span>
                                 <div>
                                     <span class="panel-kicker">Add Source</span>
                                     <h3>Provide the selected input</h3>
@@ -133,25 +142,13 @@
 
                         <section class="workflow-step workflow-step-final">
                             <div class="step-heading">
-                                <span class="step-number">3</span>
                                 <div>
                                     <span class="panel-kicker">Analyze</span>
-                                    <h3>Choose language and start</h3>
+                                    <h3>Start the video intelligence pipeline</h3>
                                 </div>
                             </div>
 
                             <div class="analyze-row">
-                                <label class="field language-field">
-                                    <span>Language</span>
-                                    <div class="language-toggle" role="group" aria-label="Language">
-                                        <button type="button" class="language-option active" data-language="english">English</button>
-                                        <button type="button" class="language-option" data-language="hinglish">Hinglish</button>
-                                    </div>
-                                    <select id="language" name="language" class="native-language-select" aria-hidden="true" tabindex="-1">
-                                        <option value="english">English</option>
-                                        <option value="hinglish">Hinglish</option>
-                                    </select>
-                                </label>
                                 <button type="submit" class="primary-btn" id="analyze-btn">Analyze Video</button>
                             </div>
                         </section>
