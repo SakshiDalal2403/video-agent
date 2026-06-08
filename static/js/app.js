@@ -415,7 +415,7 @@ function applyState(data) {
         setMessage("Pipeline running. The UI is polling live step status.", "info");
         setStatusChip("running", "Running");
     } else if (data.pipeline_done) {
-        setMessage("", "info");
+        setMessage("Analysis complete. You can now review the results and chat with the transcript.", "info");
         setStatusChip("done", "Done");
     } else {
         setMessage("", "info");
