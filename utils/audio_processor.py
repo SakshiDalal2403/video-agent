@@ -31,11 +31,41 @@ def run_ffmpeg(command: list[str]):
         raise RuntimeError(f"FFmpeg failed: {result.stderr[-1000:]}")
 
 
+def has_cookie_rows(cookies_path: str) -> bool:
+    try:
+        with open(cookies_path, "r", encoding="utf-8", errors="ignore") as f:
+            return any(line.strip() and not line.startswith("#") for line in f)
+    except OSError:
+        return False
+
+
+def apply_youtube_cookies(ydl_opts: dict):
+    ydl_opts.pop("cookiefile", None)
+    youtube_cookies = os.getenv("YOUTUBE_COOKIES")
+    if youtube_cookies:
+        cookies_path = os.path.join(DOWNLOAD_DIR, "_yt_cookies.txt")
+        with open(cookies_path, "w", encoding="utf-8") as f:
+            f.write(youtube_cookies.replace("\\n", "\n"))
+        if has_cookie_rows(cookies_path):
+            ydl_opts["cookiefile"] = cookies_path
+            log_audio("Using YOUTUBE_COOKIES env var for YouTube authentication.")
+            return
+        log_audio("YOUTUBE_COOKIES is set but does not contain valid cookie rows.")
+
+    # Local fallback for development only.
+    cookies_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "cookies.txt")
+    if os.path.exists(cookies_path) and has_cookie_rows(cookies_path):
+        ydl_opts["cookiefile"] = cookies_path
+        log_audio(f"Using cookies file for YouTube authentication: {cookies_path}")
+    else:
+        log_audio("No valid YouTube cookies found - proceeding without authentication cookies.")
+
+
 #Utube audio downlaod function
 def download_youtube_audio(url :str) ->str:
     output_path = os.path.join(DOWNLOAD_DIR, "%(title)s.%(ext)s")
     ydl_opts = {
-        "format": "bestaudio/best",
+        "format": "bestaudio[ext=m4a]/bestaudio/best[ext=mp4]/best",
         "outtmpl": output_path,
         #after downloading convert it to wav format
         "postprocessors": [
@@ -50,22 +80,11 @@ def download_youtube_audio(url :str) ->str:
         "socket_timeout": YTDLP_TIMEOUT_SECONDS,
         "retries": 3,
         "fragment_retries": 3,
+        "noplaylist": True,
+        "js_runtimes": {"node": {}},
     }
 
-    # Use cookies.txt if present (bypasses YouTube bot-detection on cloud hosts like Render)
-    cookies_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "cookies.txt")
-    if os.path.exists(cookies_path):
-        ydl_opts["cookiefile"] = cookies_path
-        log_audio(f"Using cookies file for YouTube authentication: {cookies_path}")
-    elif os.getenv("YOUTUBE_COOKIES"):
-        # On Render: write env var content to a temporary file
-        cookies_path = os.path.join(DOWNLOAD_DIR, "_yt_cookies.txt")
-        with open(cookies_path, "w", encoding="utf-8") as f:
-            f.write(os.getenv("YOUTUBE_COOKIES"))
-        ydl_opts["cookiefile"] = cookies_path
-        log_audio("Using YOUTUBE_COOKIES env var for YouTube authentication.")
-    else:
-        log_audio("No cookies.txt found — proceeding without authentication cookies.")
+    apply_youtube_cookies(ydl_opts)
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=True)
@@ -171,4 +190,3 @@ def process_input(source: str) -> list:
 # [chunk1.wav,
 #  chunk2.wav,
 #  chunk3.wav]
-

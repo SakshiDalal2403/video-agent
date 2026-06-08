@@ -4,6 +4,7 @@
 
 # ── Audio & Transcription ──────────────────────
 yt-dlp>=2024.4.9                  # YouTube audio download (actively maintained fork)
+yt-dlp-ejs>=0.8.0                 # YouTube JS challenge solver scripts for yt-dlp
 ffmpeg-python>=0.2.0              # FFmpeg Python bindings (ffmpeg binary required separately)
 pydub>=0.25.1                     # Audio file manipulation & chunking
 audioop-lts                       # Required by pydub for Python 3.13+ (audioop was removed)
