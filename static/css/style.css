@@ -2112,21 +2112,20 @@ strong {
 /* Guided input workflow */
 .workflow-steps {
     display: grid;
-    gap: 14px;
+    gap: 0;
     margin-top: 16px;
 }
 
 .workflow-step {
     display: grid;
     gap: 14px;
-    padding: 16px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    background: #151515;
+    padding: 18px 4px 20px;
+    border-bottom: 1px solid var(--border);
+    background: transparent;
 }
 
 .workflow-step-final {
-    background: #181818;
+    border-bottom: 0;
 }
 
 .step-heading {
@@ -2159,15 +2158,15 @@ strong {
 .source-mode-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 10px;
+    gap: 8px;
 }
 
 .source-mode-card {
-    min-height: 104px;
-    padding: 14px;
-    border: 1px solid var(--border);
+    min-height: 76px;
+    padding: 12px 14px;
+    border: 1px solid transparent;
     border-radius: var(--radius-sm);
-    background: var(--surface-soft);
+    background: transparent;
     color: var(--text);
     cursor: pointer;
     text-align: left;
@@ -2177,7 +2176,7 @@ strong {
 .source-mode-card:hover,
 .source-mode-card.active {
     border-color: rgba(16, 163, 127, 0.58);
-    background: rgba(16, 163, 127, 0.1);
+    background: rgba(16, 163, 127, 0.08);
 }
 
 .source-mode-card:hover {
@@ -2215,8 +2214,8 @@ strong {
 
 .analyze-row {
     display: grid;
-    grid-template-columns: minmax(220px, 340px) minmax(180px, 220px);
-    gap: 14px;
+    grid-template-columns: minmax(220px, 380px) minmax(220px, 280px);
+    gap: 42px;
     align-items: end;
 }
 
@@ -2300,4 +2299,3 @@ strong {
         min-height: auto;
     }
 }
-

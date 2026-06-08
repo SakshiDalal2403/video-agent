@@ -41,6 +41,7 @@ const elements = {
     languageOptions: document.querySelectorAll(".language-option"),
     sourceModeButtons: document.querySelectorAll(".source-mode-card"),
     sourceModePanels: document.querySelectorAll(".source-mode-panel"),
+    sourceInputStep: document.querySelector(".source-input-step"),
     analyzeBtn: document.getElementById("analyze-btn"),
     statusChip: document.getElementById("status-chip"),
     pipelineStarting: document.getElementById("pipeline-starting"),
@@ -88,6 +89,10 @@ function syncLanguageToggle(value) {
 }
 
 function setSourceMode(mode) {
+    if (elements.sourceInputStep) {
+        elements.sourceInputStep.classList.toggle("hidden", !mode);
+    }
+
     elements.sourceModeButtons.forEach((button) => {
         const isActive = button.dataset.sourceMode === mode;
         button.classList.toggle("active", isActive);
@@ -318,7 +323,7 @@ function revealInputPanel() {
     elements.fileName.textContent = "No file selected";
     clearRecording();
     state.inputRevealed = true;
-    setSourceMode("url");
+    setSourceMode("");
     updateInputVisibility(true, false);
     updateProcessingVisibility(false);
     elements.emptyState.scrollIntoView({ behavior: "smooth", block: "start" });
