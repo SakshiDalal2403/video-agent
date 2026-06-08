@@ -39,6 +39,8 @@ const elements = {
     recordingWave: document.getElementById("recording-wave"),
     language: document.getElementById("language"),
     languageOptions: document.querySelectorAll(".language-option"),
+    sourceModeButtons: document.querySelectorAll(".source-mode-card"),
+    sourceModePanels: document.querySelectorAll(".source-mode-panel"),
     analyzeBtn: document.getElementById("analyze-btn"),
     statusChip: document.getElementById("status-chip"),
     pipelineStarting: document.getElementById("pipeline-starting"),
@@ -82,6 +84,18 @@ const pipelineIcons = {
 function syncLanguageToggle(value) {
     elements.languageOptions.forEach((option) => {
         option.classList.toggle("active", option.dataset.language === value);
+    });
+}
+
+function setSourceMode(mode) {
+    elements.sourceModeButtons.forEach((button) => {
+        const isActive = button.dataset.sourceMode === mode;
+        button.classList.toggle("active", isActive);
+        button.setAttribute("aria-pressed", String(isActive));
+    });
+
+    elements.sourceModePanels.forEach((panel) => {
+        panel.classList.toggle("active", panel.dataset.sourcePanel === mode);
     });
 }
 
@@ -304,6 +318,7 @@ function revealInputPanel() {
     elements.fileName.textContent = "No file selected";
     clearRecording();
     state.inputRevealed = true;
+    setSourceMode("url");
     updateInputVisibility(true, false);
     updateProcessingVisibility(false);
     elements.emptyState.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -619,6 +634,7 @@ async function startRecording() {
     }
 
     try {
+        setSourceMode("record");
         clearRecording();
         elements.mediaFile.value = "";
         elements.fileName.textContent = "No file selected";
@@ -725,9 +741,16 @@ elements.analyzeForm.addEventListener("submit", async (event) => {
 elements.mediaFile.addEventListener("change", () => {
     const file = elements.mediaFile.files[0];
     if (file) {
+        setSourceMode("upload");
         clearRecording();
     }
     elements.fileName.textContent = file ? file.name : "No file selected";
+});
+
+elements.sourceModeButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+        setSourceMode(button.dataset.sourceMode);
+    });
 });
 
 elements.recordStartBtn.addEventListener("click", startRecording);

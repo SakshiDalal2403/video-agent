@@ -2109,4 +2109,195 @@ strong {
     font-weight: 700;
 }
 
+/* Guided input workflow */
+.workflow-steps {
+    display: grid;
+    gap: 14px;
+    margin-top: 16px;
+}
+
+.workflow-step {
+    display: grid;
+    gap: 14px;
+    padding: 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: #151515;
+}
+
+.workflow-step-final {
+    background: #181818;
+}
+
+.step-heading {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.step-number {
+    width: 32px;
+    height: 32px;
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    background: var(--surface-soft);
+    border: 1px solid var(--border-strong);
+    color: var(--text);
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.82rem;
+    font-weight: 800;
+}
+
+.step-heading h3 {
+    margin: 4px 0 0;
+    font-size: 1rem;
+    line-height: 1.25;
+}
+
+.source-mode-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.source-mode-card {
+    min-height: 104px;
+    padding: 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-soft);
+    color: var(--text);
+    cursor: pointer;
+    text-align: left;
+    transition: border-color 0.16s ease, background 0.16s ease, transform 0.16s ease, box-shadow 0.16s ease;
+}
+
+.source-mode-card:hover,
+.source-mode-card.active {
+    border-color: rgba(16, 163, 127, 0.58);
+    background: rgba(16, 163, 127, 0.1);
+}
+
+.source-mode-card:hover {
+    transform: translateY(-1px);
+}
+
+.source-mode-card.active {
+    box-shadow: 0 0 0 1px rgba(16, 163, 127, 0.2);
+}
+
+.source-mode-title,
+.source-mode-copy {
+    display: block;
+}
+
+.source-mode-title {
+    font-weight: 800;
+    font-size: 0.98rem;
+}
+
+.source-mode-copy {
+    margin-top: 8px;
+    color: var(--text-muted);
+    font-size: 0.84rem;
+    line-height: 1.45;
+}
+
+.source-mode-panel {
+    display: none;
+}
+
+.source-mode-panel.active {
+    display: block;
+}
+
+.analyze-row {
+    display: grid;
+    grid-template-columns: minmax(220px, 340px) minmax(180px, 220px);
+    gap: 14px;
+    align-items: end;
+}
+
+.language-field {
+    margin-top: 0;
+}
+
+.analyze-row .primary-btn {
+    margin-top: 0;
+    min-height: 48px;
+}
+
+.empty-state .workflow-step .field:first-of-type,
+.empty-state .workflow-step .field {
+    position: static;
+    display: flex;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+.empty-state .workflow-step .field > span {
+    display: block;
+}
+
+.empty-state .workflow-step .field textarea {
+    min-height: 112px;
+    height: auto;
+    padding: 13px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-soft);
+    font-size: 1rem;
+}
+
+.empty-state .workflow-step .field textarea:focus {
+    background: #2b2b2b;
+    box-shadow: 0 0 0 3px rgba(16, 163, 127, 0.16);
+}
+
+.empty-state .workflow-step .file-picker {
+    position: static;
+    width: 100%;
+    min-height: 58px;
+    margin: 0;
+    transform: none;
+    border-radius: var(--radius-sm);
+    background: var(--surface-soft);
+}
+
+.empty-state .workflow-step .primary-btn {
+    position: static;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    transform: none;
+    border-radius: var(--radius-sm);
+}
+
+.empty-state .workflow-step .primary-btn:hover {
+    transform: translateY(-1px);
+}
+
+.empty-state .workflow-step .recorder-field {
+    margin-top: 0;
+    padding: 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-soft);
+}
+
+@media (max-width: 860px) {
+    .source-mode-grid,
+    .analyze-row {
+        grid-template-columns: 1fr;
+    }
+
+    .source-mode-card {
+        min-height: auto;
+    }
+}
 

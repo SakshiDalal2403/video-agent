@@ -63,40 +63,99 @@
                         <span class="status-chip" id="status-chip">Idle</span>
                     </div>
 
-                    <label class="field">
-                        <span>YouTube URL, file path, or upload</span>
-                        <textarea id="source" name="source" rows="4" placeholder="Paste a YouTube URL or local file path"></textarea>
-                        <input id="media-file" name="file" class="file-input" type="file" accept="audio/*,video/*,.mp3,.mp4,.m4a,.wav,.aac,.flac,.ogg,.webm,.wma,.mov,.mkv,.avi">
-                        <label for="media-file" class="file-picker">
-                            <span>Choose file</span>
-                            <strong id="file-name">No file selected</strong>
-                        </label>
-                        <button type="submit" class="primary-btn" id="analyze-btn">Analyze Video</button>
-                    </label>
+                    <div class="workflow-steps">
+                        <section class="workflow-step">
+                            <div class="step-heading">
+                                <span class="step-number">1</span>
+                                <div>
+                                    <span class="panel-kicker">Choose Source</span>
+                                    <h3>Pick where your meeting is coming from</h3>
+                                </div>
+                            </div>
 
-                    <div class="field recorder-field">
-                        <span>Microphone Recording</span>
-                        <div class="recorder-controls">
-                            <button type="button" class="ghost-btn" id="record-start-btn">Start Recording</button>
-                            <button type="button" class="ghost-btn" id="record-stop-btn" disabled>Stop Recording</button>
-                            <button type="button" class="ghost-btn" id="record-discard-btn" disabled>Discard</button>
-                        </div>
-                        <div id="recording-wave" class="recording-wave hidden" aria-hidden="true"></div>
-                        <div class="recording-status" id="recording-status">No microphone recording yet.</div>
-                        <audio id="recording-preview" class="recording-preview hidden" controls></audio>
+                            <div class="source-mode-grid" role="group" aria-label="Input source">
+                                <button type="button" class="source-mode-card active" data-source-mode="url">
+                                    <span class="source-mode-title">YouTube URL</span>
+                                    <span class="source-mode-copy">Paste a public or cookie-enabled video link.</span>
+                                </button>
+                                <button type="button" class="source-mode-card" data-source-mode="upload">
+                                    <span class="source-mode-title">Upload File</span>
+                                    <span class="source-mode-copy">Choose an audio or video file from your device.</span>
+                                </button>
+                                <button type="button" class="source-mode-card" data-source-mode="record">
+                                    <span class="source-mode-title">Record Audio</span>
+                                    <span class="source-mode-copy">Capture microphone audio and analyze it directly.</span>
+                                </button>
+                            </div>
+                        </section>
+
+                        <section class="workflow-step">
+                            <div class="step-heading">
+                                <span class="step-number">2</span>
+                                <div>
+                                    <span class="panel-kicker">Add Source</span>
+                                    <h3>Provide the selected input</h3>
+                                </div>
+                            </div>
+
+                            <div class="source-mode-panel active" data-source-panel="url">
+                                <label class="field">
+                                    <span>YouTube URL or local file path</span>
+                                    <textarea id="source" name="source" rows="4" placeholder="Paste a YouTube video link"></textarea>
+                                </label>
+                            </div>
+
+                            <div class="source-mode-panel" data-source-panel="upload">
+                                <div class="field upload-field">
+                                    <span>Upload audio or video</span>
+                                    <input id="media-file" name="file" class="file-input" type="file" accept="audio/*,video/*,.mp3,.mp4,.m4a,.wav,.aac,.flac,.ogg,.webm,.wma,.mov,.mkv,.avi">
+                                    <label for="media-file" class="file-picker">
+                                        <span>Choose file</span>
+                                        <strong id="file-name">No file selected</strong>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="source-mode-panel" data-source-panel="record">
+                                <div class="field recorder-field">
+                                    <span>Microphone recording</span>
+                                    <div class="recorder-controls">
+                                        <button type="button" class="ghost-btn" id="record-start-btn">Start Recording</button>
+                                        <button type="button" class="ghost-btn" id="record-stop-btn" disabled>Stop Recording</button>
+                                        <button type="button" class="ghost-btn" id="record-discard-btn" disabled>Discard</button>
+                                    </div>
+                                    <div id="recording-wave" class="recording-wave hidden" aria-hidden="true"></div>
+                                    <div class="recording-status" id="recording-status">No microphone recording yet.</div>
+                                    <audio id="recording-preview" class="recording-preview hidden" controls></audio>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="workflow-step workflow-step-final">
+                            <div class="step-heading">
+                                <span class="step-number">3</span>
+                                <div>
+                                    <span class="panel-kicker">Analyze</span>
+                                    <h3>Choose language and start</h3>
+                                </div>
+                            </div>
+
+                            <div class="analyze-row">
+                                <label class="field language-field">
+                                    <span>Language</span>
+                                    <div class="language-toggle" role="group" aria-label="Language">
+                                        <button type="button" class="language-option active" data-language="english">English</button>
+                                        <button type="button" class="language-option" data-language="hinglish">Hinglish</button>
+                                    </div>
+                                    <select id="language" name="language" class="native-language-select" aria-hidden="true" tabindex="-1">
+                                        <option value="english">English</option>
+                                        <option value="hinglish">Hinglish</option>
+                                    </select>
+                                </label>
+                                <button type="submit" class="primary-btn" id="analyze-btn">Analyze Video</button>
+                            </div>
+                        </section>
                     </div>
-
-                    <label class="field">
-                        <span>Language</span>
-                        <div class="language-toggle" role="group" aria-label="Language">
-                            <button type="button" class="language-option active" data-language="english">English</button>
-                            <button type="button" class="language-option" data-language="hinglish">Hinglish</button>
-                        </div>
-                        <select id="language" name="language" class="native-language-select" aria-hidden="true" tabindex="-1">
-                            <option value="english">English</option>
-                            <option value="hinglish">Hinglish</option>
-                        </select>
-                    </label>
                 </form>
             </section>
 
