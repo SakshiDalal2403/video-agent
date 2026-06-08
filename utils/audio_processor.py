@@ -57,6 +57,13 @@ def download_youtube_audio(url :str) ->str:
     if os.path.exists(cookies_path):
         ydl_opts["cookiefile"] = cookies_path
         log_audio(f"Using cookies file for YouTube authentication: {cookies_path}")
+    elif os.getenv("YOUTUBE_COOKIES"):
+        # On Render: write env var content to a temporary file
+        cookies_path = os.path.join(DOWNLOAD_DIR, "_yt_cookies.txt")
+        with open(cookies_path, "w", encoding="utf-8") as f:
+            f.write(os.getenv("YOUTUBE_COOKIES"))
+        ydl_opts["cookiefile"] = cookies_path
+        log_audio("Using YOUTUBE_COOKIES env var for YouTube authentication.")
     else:
         log_audio("No cookies.txt found — proceeding without authentication cookies.")
 
