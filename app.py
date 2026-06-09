@@ -2,20 +2,12 @@ import os
 import threading
 import time
 import uuid
-import codecs
 
 from dotenv import load_dotenv
 from flask import Flask, jsonify, render_template, request, session
 from werkzeug.utils import secure_filename
 
 load_dotenv()
-
-try:
-    "localhost".encode("idna")
-except LookupError:
-    from encodings import idna as _stdlib_idna
-
-    codecs.register(lambda name: _stdlib_idna.getregentry() if name == "idna" else None)
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "video-agent-dev-secret")
