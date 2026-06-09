@@ -15,9 +15,28 @@ app.secret_key = os.getenv("FLASK_SECRET_KEY", "video-agent-dev-secret")
 UPLOAD_DIR = os.path.join("downloads", "uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
+from app import session_store
+
 STATE_LOCK = threading.Lock()
-USER_STATE = {}
-ACTIVE_RUNS = {}
+
+
+def start_cleanup_thread():
+    def cleanup_loop():
+        while True:
+            try:
+                if session_store.mark_cleanup_if_due():
+                    expired = session_store.get_expired_sessions()
+                    for sid in expired:
+                        session_store.clear_session(sid)
+            except Exception as exc:
+                print(f"[cleanup] Error: {exc}", flush=True)
+            time.sleep(60)
+
+    t = threading.Thread(target=cleanup_loop, daemon=True)
+    t.start()
+
+
+start_cleanup_thread()
 RAG_CHAINS = {}
 WORKER_STOP_EVENTS = {}
 STALE_RUN_SECONDS = int(os.getenv("STALE_RUN_SECONDS", "180"))
@@ -60,10 +79,12 @@ def _load_state_unlocked(run_id):
     if not run_id:
         return _build_default_state()
 
-    if run_id not in USER_STATE:
-        USER_STATE[run_id] = _build_default_state()
-        USER_STATE[run_id]["run_id"] = run_id
-    return USER_STATE[run_id]
+    state = session_store.get_json("result", run_id)
+    if not state:
+        state = _build_default_state()
+        state["run_id"] = run_id
+        session_store.set_json("result", run_id, state)
+    return state
 
 
 def _save_state_unlocked(run_id, state):
@@ -71,21 +92,23 @@ def _save_state_unlocked(run_id, state):
         return
 
     state["updated_at"] = time.time()
-    USER_STATE[run_id] = state
+    session_store.set_json("result", run_id, state)
 
 
 def set_active_run(sid, tab_id, run_id):
     if not tab_id:
         return
 
-    ACTIVE_RUNS[_memory_active_key(sid, tab_id)] = run_id
+    key = _memory_active_key(sid, tab_id)
+    session_store.set_json("active_run", key, run_id)
 
 
 def get_active_run(sid, tab_id):
     if not tab_id:
         return None
 
-    return ACTIVE_RUNS.get(_memory_active_key(sid, tab_id))
+    key = _memory_active_key(sid, tab_id)
+    return session_store.get_json("active_run", key)
 
 
 def get_request_tab_id(payload=None):
@@ -198,7 +221,6 @@ def reset_state_for_run(run_id, sid, tab_id):
         state["run_id"] = run_id
         state["started_at"] = now
         state["heartbeat_at"] = now
-        USER_STATE[run_id] = state
         _save_state_unlocked(run_id, state)
         RAG_CHAINS.pop(run_id, None)
 

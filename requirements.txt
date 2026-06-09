@@ -45,4 +45,5 @@ Flask>=3.0.0                      # HTML/CSS/JS web server for local UI
 
 gunicorn>=21.2.0
 groq>=0.9.0
+redis>=5.0.0
 
