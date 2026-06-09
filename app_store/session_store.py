@@ -8,7 +8,7 @@ from typing import Any
 
 import redis
 
-from app.config import settings
+from app_store.config import settings
 
 
 ACTIVE_SESSIONS_KEY = "active_sessions"

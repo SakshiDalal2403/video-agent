@@ -15,7 +15,7 @@ app.secret_key = os.getenv("FLASK_SECRET_KEY", "video-agent-dev-secret")
 UPLOAD_DIR = os.path.join("downloads", "uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-from app import session_store
+from app_store import session_store
 
 STATE_LOCK = threading.Lock()
 
