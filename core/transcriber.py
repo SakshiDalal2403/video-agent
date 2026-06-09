@@ -1,40 +1,70 @@
 import os
 import requests
 import time
-from huggingface_hub import InferenceClient
+# from huggingface_hub import InferenceClient
 from pydub import AudioSegment
+from groq import Groq
 
 SARVAM_PIECE_SECONDS = 25
 
-HF_API_KEY = os.getenv("HUGGINGFACE_API_KEY") or os.getenv("HF_TOKEN")
-HF_WHISPER_MODEL = os.getenv("HF_WHISPER_MODEL", "openai/whisper-large-v3")
-HF_PROVIDER = os.getenv("HF_PROVIDER", "fal-ai")
+# HF_API_KEY = os.getenv("HUGGINGFACE_API_KEY") or os.getenv("HF_TOKEN")
+# HF_WHISPER_MODEL = os.getenv("HF_WHISPER_MODEL", "openai/whisper-large-v3")
+# HF_PROVIDER = os.getenv("HF_PROVIDER", "fal-ai")
+
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 SARVAM_API_KEY =os.getenv("SARVAM_API_KEY")
 SARVAM_STT_TRANSLATE_URL = "https://api.sarvam.ai/speech-to-text-translate"
 SARVAM_MODEL = os.getenv("SARVAM_STT_MODEL", "saaras:v2.5")
 
-def transcribe_chunk_huggingface(chunk_path: str) -> str:
-    if not HF_API_KEY:
-        raise RuntimeError("HUGGINGFACE_API_KEY or HF_TOKEN is not set in environment / .env")
+# Commented out Hugging Face transcription
+# def transcribe_chunk_huggingface(chunk_path: str) -> str:
+#     if not HF_API_KEY:
+#         raise RuntimeError("HUGGINGFACE_API_KEY or HF_TOKEN is not set in environment / .env")
+# 
+#     client = InferenceClient(provider=HF_PROVIDER, api_key=HF_API_KEY)
+#     last_error = None
+#     for attempt in range(3):
+#         try:
+#             result = client.automatic_speech_recognition(
+#                 chunk_path,
+#                 model=HF_WHISPER_MODEL,
+#             )
+#             return result.text
+#         except Exception as exc:
+#             last_error = exc
+#             if attempt == 2:
+#                 break
+#             time.sleep(2 * (attempt + 1))
+# 
+#     print(f"\nHugging Face transcription failed: {last_error}\n")
+#     raise last_error
 
-    client = InferenceClient(provider=HF_PROVIDER, api_key=HF_API_KEY)
+def transcribe_chunk_groq(chunk_path: str) -> str:
+    if not GROQ_API_KEY:
+        raise RuntimeError("GROQ_API_KEY is not set in environment / .env")
+
+    client = Groq(api_key=GROQ_API_KEY)
     last_error = None
     for attempt in range(3):
         try:
-            result = client.automatic_speech_recognition(
-                chunk_path,
-                model=HF_WHISPER_MODEL,
-            )
-            return result.text
+            with open(chunk_path, "rb") as f:
+                transcription = client.audio.transcriptions.create(
+                    file=(chunk_path, f.read()),
+                    model="whisper-large-v3",
+                    response_format="text",
+                    language="en",
+                )
+            return transcription
         except Exception as exc:
             last_error = exc
             if attempt == 2:
                 break
             time.sleep(2 * (attempt + 1))
 
-    print(f"\nHugging Face transcription failed: {last_error}\n")
+    print(f"\nGroq Whisper transcription failed: {last_error}\n")
     raise last_error
+
 
 def _send_to_sarvam(piece_path: str) -> str:
     """Send one ≤30s WAV file to Sarvam and return the English transcript."""
@@ -103,6 +133,7 @@ def transcribe_chunk_sarvam(chunk_path: str) -> str:
             if os.path.exists(piece_path):
                 os.remove(piece_path)
 
+
     return full_text.strip()
 
 
@@ -110,19 +141,20 @@ def transcribe_chunk_sarvam(chunk_path: str) -> str:
    
 def transcribe_chunk(chunk_path: str, language: str = "english") -> str:
     """
-    Route one chunk to Hugging Face or Sarvam depending on language choice.
-    - english  → Hugging Face Whisper API
+    Route one chunk to Groq or Sarvam depending on language choice.
+    - english  → Groq Whisper API
     - hinglish → Sarvam (translates to English while transcribing)
     """
     if language.lower() == "hinglish":
         return transcribe_chunk_sarvam(chunk_path)
-    return transcribe_chunk_huggingface(chunk_path)
+    # return transcribe_chunk_huggingface(chunk_path)  # Commented out Hugging Face
+    return transcribe_chunk_groq(chunk_path)
 
 def transcribe_all(chunks: list, language: str = "english") -> str:
 
     full_transcript = "" 
 
-    engine = "Sarvam AI" if language.lower() == "hinglish" else "Hugging Face Whisper API"
+    engine = "Sarvam AI" if language.lower() == "hinglish" else "Groq Whisper API"
     print(f"Using {engine} for transcription.")
 
     for i, chunk in enumerate(chunks):  
@@ -135,7 +167,4 @@ def transcribe_all(chunks: list, language: str = "english") -> str:
 
     print("Transcription complete.")
 
-    return full_transcript.strip()  
-         
-
-
+    return full_transcript.strip()
