@@ -15,7 +15,10 @@ ACTIVE_SESSIONS_KEY = "active_sessions"
 ACTIVE_SESSIONS_READABLE_KEY = "active_sessions:readable"
 CLEANUP_COOLDOWN_KEY = "cleanup:last_run"
 CLEANUP_COOLDOWN_READABLE_KEY = "cleanup:last_run:readable"
+import os
+
 _client: redis.Redis | None = None
+_client_pid: int | None = None
 _memory_lock = threading.Lock()
 _memory: dict[str, tuple[float, str]] = {}
 _active_memory: dict[str, float] = {}
@@ -23,15 +26,17 @@ _cleanup_due_at = 0.0
 
 
 def _get_client() -> redis.Redis | None:
-    global _client
+    global _client, _client_pid
     if not settings.redis_url:
         return None
-    if _client is None:
+    current_pid = os.getpid()
+    if _client is None or _client_pid != current_pid:
         _client = redis.from_url(
             settings.redis_url,
             decode_responses=True,
             max_connections=20,
         )
+        _client_pid = current_pid
     return _client
 
 
