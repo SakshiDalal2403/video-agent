@@ -381,7 +381,11 @@ function renderChat(chatHistory = []) {
 
         const bubble = document.createElement("div");
         bubble.className = "chat-bubble";
-        bubble.textContent = message.content;
+        if (message.role === "assistant") {
+            bubble.innerHTML = parseMarkdown(message.content);
+        } else {
+            bubble.textContent = message.content;
+        }
 
         wrap.appendChild(role);
         wrap.appendChild(bubble);
