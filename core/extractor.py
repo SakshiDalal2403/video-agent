@@ -37,10 +37,12 @@ def build_chain(system_prompt : str):
 
 def extract_action_items(transcript:str)->str:
     chain = build_chain(
-         "You are an expert meeting analyst. From the meeting transcript, "
-        "extract all action items. For each provide:\n"
+        "You are an expert content analyst. From the transcript below, "
+        "extract ALL action items, tasks, to-dos, or things that need to be done. "
+        "This could be from a meeting, lecture, speech, conversation, or any audio/video content. "
+        "For each item provide:\n"
         "- Task description\n"
-        "- Owner (who is responsible)\n"
+        "- Owner (who is responsible, if mentioned, else write 'Not specified')\n"
         "- Deadline (if mentioned, else write 'Not specified')\n\n"
         "Format as a numbered list. If none found say 'No action items found.'"
     )
@@ -50,8 +52,10 @@ def extract_action_items(transcript:str)->str:
 
 def extract_key_decisions(transcript: str) -> str:
     chain = build_chain(
-        "You are an expert meeting analyst. From the meeting transcript, "
-        "extract all key decisions made. Format as a numbered list. "
+        "You are an expert content analyst. From the transcript below, "
+        "extract all key decisions, conclusions, choices, or outcomes that were stated or implied. "
+        "This could be from a meeting, lecture, speech, conversation, or any audio/video content. "
+        "Format as a numbered list. "
         "If none found say 'No key decisions found.'"
     )
     return invoke_with_retry(chain, transcript)
@@ -59,8 +63,12 @@ def extract_key_decisions(transcript: str) -> str:
 
 def extract_questions(transcript: str) -> str:
     chain = build_chain(
-        "From the meeting transcript, extract all unresolved questions "
-        "or topics needing follow-up. Format as a numbered list. "
+        "You are an expert content analyst. From the transcript below, "
+        "extract ALL questions — including open questions, rhetorical questions, unresolved topics, "
+        "things needing follow-up, or questions posed to the audience or listener. "
+        "This could be from a meeting, lecture, speech, conversation, or any audio/video content. "
+        "Do NOT skip questions just because they are rhetorical or conversational. "
+        "Format as a numbered list. "
         "If none found say 'No open questions found.'"
     )
     return invoke_with_retry(chain, transcript)
