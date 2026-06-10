@@ -138,6 +138,9 @@ def chunk_audio(wav_path : str , chunk_minutes : int = 10) -> list:
     chunks = sorted(glob.glob(f"{wav_path}_chunk_*.wav"))
     if not chunks:
         raise RuntimeError("Audio chunking finished but no chunks were created.")
+    for i, chunk in enumerate(chunks):
+        size_mb = os.path.getsize(chunk) / (1024 * 1024)
+        log_audio(f"Chunk {i + 1}/{len(chunks)}: {os.path.basename(chunk)} — {size_mb:.2f} MB")
     return chunks
 
 
