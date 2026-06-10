@@ -1,3 +1,4 @@
+import encodings.idna  # noqa: F401 — force-register idna codec before Werkzeug loads
 import os
 import threading
 import time
