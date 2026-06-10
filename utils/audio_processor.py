@@ -147,17 +147,30 @@ def chunk_audio(wav_path : str , chunk_minutes : int = 10) -> list:
 # print(chunk_audio(data_final))
 
 #main controller function
+# def process_input(source: str) -> list:
+#     if source.startswith("http://") or source.startswith("https://"):
+#         log_audio("Detected YouTube URL. Downloading audio...")
+#         wav_path = download_youtube_audio(source)
+#     else:
+#         log_audio("Detected local file. Converting to WAV...")
+#         wav_path = convert_to_wav(source)
+
+#     log_audio(f"WAV ready at {wav_path}. Chunking audio...")
+#     chunks = chunk_audio(wav_path)
+#     log_audio(f"Audio ready - {len(chunks)} chunk(s) created.")
+#     return chunks
+
 def process_input(source: str) -> list:
     if source.startswith("http://") or source.startswith("https://"):
         log_audio("Detected YouTube URL. Downloading audio...")
-        wav_path = download_youtube_audio(source)
+        downloaded_file = download_youtube_audio(source)
+        # Fix: Force the YouTube download through the downsampler!
+        wav_path = convert_to_wav(downloaded_file) 
     else:
         log_audio("Detected local file. Converting to WAV...")
         wav_path = convert_to_wav(source)
-
     log_audio(f"WAV ready at {wav_path}. Chunking audio...")
     chunks = chunk_audio(wav_path)
-    log_audio(f"Audio ready - {len(chunks)} chunk(s) created.")
     return chunks
 
             # process_input()
