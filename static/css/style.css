@@ -228,6 +228,7 @@ select {
 
 .field textarea,
 .field select,
+.field input,
 #chat-input {
     width: 100%;
     border: 1px solid var(--border);
@@ -327,6 +328,7 @@ select {
 
 .field textarea:focus,
 .field select:focus,
+.field input:focus,
 #chat-input:focus {
     outline: none;
     background: #2b2b2b;
