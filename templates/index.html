@@ -66,10 +66,7 @@
                     <div class="workflow-steps">
                         <section class="workflow-step">
                             <div class="step-heading">
-                                <div>
-                                    <span class="panel-kicker">Choose Source</span>
-                                    <h3>Pick where your meeting is coming from</h3>
-                                </div>
+                                <div></div>
                                 <label class="field language-field">
                                     <span>Language</span>
                                     <div class="language-toggle" role="group" aria-label="Language">
@@ -100,17 +97,12 @@
                         </section>
 
                         <section class="workflow-step source-input-step hidden">
-                            <div class="step-heading">
-                                <div>
-                                    <span class="panel-kicker">Add Source</span>
-                                    <h3>Provide the selected input</h3>
-                                </div>
-                            </div>
+                            <div class="step-heading"></div>
 
                             <div class="source-mode-panel" data-source-panel="url">
                                 <label class="field">
                                     <span>YouTube URL or local file path</span>
-                                    <textarea id="source" name="source" rows="4" placeholder="Paste a YouTube video link"></textarea>
+                                    <input type="text" id="source" name="source" placeholder="Paste a YouTube video link">
                                 </label>
                             </div>
 
@@ -255,7 +247,7 @@
                     </div>
 
                     <form id="chat-form" class="chat-form">
-                        <textarea id="chat-input" rows="2" placeholder="What were the main decisions made?"></textarea>
+                        <textarea id="chat-input" rows="2" placeholder="What were the main decisions made?" id="chat-input"></textarea>
                         <button type="submit" class="primary-btn" id="send-btn">Send</button>
                     </form>
                 </section>

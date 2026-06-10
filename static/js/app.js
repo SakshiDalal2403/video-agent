@@ -770,7 +770,19 @@ elements.chatForm.addEventListener("submit", async (event) => {
         return;
     }
 
+    // Optimistically show user message right away
+    elements.chatInput.value = "";
     elements.sendBtn.disabled = true;
+
+    const currentHistory = [];
+    elements.chatHistory.querySelectorAll(".chat-message").forEach((el) => {
+        const role = el.classList.contains("user") ? "user" : "assistant";
+        const content = el.querySelector(".chat-bubble")?.textContent || "";
+        currentHistory.push({ role, content });
+    });
+    currentHistory.push({ role: "user", content: question });
+    renderChat(currentHistory);
+
     setMessage("Fetching answer from the transcript context...", "info");
 
     try {
@@ -780,12 +792,18 @@ elements.chatForm.addEventListener("submit", async (event) => {
             run_id: state.activeRunId,
         });
         renderChat(data.chat_history);
-        elements.chatInput.value = "";
         setMessage("Answer generated from the current meeting transcript.", "info");
     } catch (error) {
         setMessage(error.message, "error");
     } finally {
         elements.sendBtn.disabled = false;
+    }
+});
+
+elements.chatInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        elements.chatForm.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
     }
 });
 
