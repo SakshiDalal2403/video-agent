@@ -1,147 +1,272 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Video Assistant</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&family=Playfair+Display:ital,wght@1,600&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
+
 <body>
-    <div class="app-shell">
-        <main class="main-content">
-            <header class="topbar">
-                <div class="brand">
-                    <div class="brand-mark">VA</div>
-                    <div>
-                        <p class="eyebrow">AI Video Assistant</p>
-                        <h1>Video Intelligence</h1>
-                    </div>
-                </div>
-                <button id="start-new-btn" class="start-new-topbar-btn" type="button">Start New</button>
-            </header>
 
-            <section id="hero-panel" class="hero panel hero-panel">
-                <div class="hero-copy">
+    <!-- ═══════════════════════════════════════════════
+         LOGIN / SIGNUP OVERLAY — covers entire viewport
+    ════════════════════════════════════════════════ -->
+    <div id="login-modal" class="auth-overlay">
+        <div class="auth-card">
+            <!-- Brand badge -->
+            <div class="auth-brand">
+                <div class="auth-brand-mark">MI</div>
+            </div>
+
+            <h2 id="auth-title" class="auth-heading">Login to Video Agent</h2>
+            <p class="auth-subtitle">Enter your credentials to continue</p>
+
+            <form id="auth-form" class="auth-form">
+                <div class="auth-field">
+                    <label for="auth-username">Username</label>
+                    <input id="auth-username" type="text" placeholder="Enter your username" required autocomplete="username">
+                </div>
+
+                <div class="auth-field">
+                    <label for="auth-password">Password</label>
+                    <input id="auth-password" type="password" placeholder="Enter your password" required autocomplete="current-password">
+                </div>
+
+                <div id="auth-error" class="auth-msg auth-msg--error"></div>
+                <div id="auth-success" class="auth-msg auth-msg--success"></div>
+
+                <button type="submit" id="auth-submit-btn" class="auth-submit-btn">Login</button>
+            </form>
+
+            <p class="auth-footer">
+                <span id="auth-toggle-msg">Create new account?</span>
+                <a href="#" id="auth-toggle-btn" class="auth-toggle-link">Sign Up</a>
+            </p>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════
+         TOP BAR  (Start New button lives here)
+    ════════════════════════════════════════════════ -->
+    <div class="app-shell" id="app-shell" style="display: none;">
+
+        <header class="topbar">
+            <div class="brand">
+                <div class="brand-mark">MI</div>
+                <div>
                     <p class="eyebrow">Meeting Intelligence</p>
-                    <h2>Analyze any meeting video.</h2>
                 </div>
-                <div class="hero-badges">
-                    <span>Transcription</span>
-                    <span>Summarisation</span>
-                    <span>Action Items</span>
-                    <span>RAG Chat</span>
+            </div>
+            <button id="start-new-btn" class="start-new-topbar-btn" type="button">Start New</button>
+        </header>
+
+        <!-- ═══════════════════════════════════════════
+             MESSAGE BAR  (errors / notices)
+        ════════════════════════════════════════════ -->
+        <section id="message-bar" class="message-bar hidden"></section>
+
+        <!-- ═══════════════════════════════════════════
+             PROCESSING STATE
+        ════════════════════════════════════════════ -->
+        <section id="processing-state" class="processing-state hidden" aria-live="polite">
+            <div class="processing-state-card">
+                <div class="processing-orbit" aria-hidden="true"><span></span></div>
+                <div class="processing-copy">
+                    <p class="panel-kicker">Pipeline Running</p>
+                    <h3>Preparing your meeting intelligence</h3>
                 </div>
-            </section>
-
-            <section id="message-bar" class="message-bar hidden"></section>
-
-            <section id="processing-state" class="processing-state hidden" aria-live="polite">
-                <div class="processing-state-card">
-                    <div class="processing-orbit" aria-hidden="true">
-                        <span></span>
-                    </div>
-                    <div class="processing-copy">
-                        <p class="panel-kicker">Pipeline Running</p>
-                        <h3>Preparing your meeting intelligence</h3>
-                    </div>
-                    <div id="pipeline-starting" class="pipeline-starting hidden">
-                        <span class="pipeline-starting-text">Pipeline getting started</span><span class="pipeline-starting-dots"></span>
-                    </div>
-                    <div id="pipeline-steps" class="pipeline-steps hidden"></div>
+                <div id="pipeline-starting" class="pipeline-starting hidden">
+                    <span class="pipeline-starting-text">Pipeline getting started</span>
+                    <span class="pipeline-starting-dots"></span>
                 </div>
-            </section>
+                <div id="pipeline-steps" class="pipeline-steps hidden"></div>
+            </div>
+        </section>
 
+        <!-- ═══════════════════════════════════════════
+             MAIN CONTENT  – two-column split screen
+        ════════════════════════════════════════════ -->
+        <main class="main-content">
 
-            <section id="empty-state" class="panel empty-state">
+            <!-- ─── LEFT HERO PANEL ─────────────────── -->
+            <aside class="hero-panel" id="hero-panel">
+                <div class="hero-inner">
+                    <p class="hero-eyebrow">MEETING INTELLIGENCE</p>
+
+                    <h2 class="hero-headline">
+                        Turn meetings<br>
+                        into <em class="hero-accent">clarity.</em>
+                    </h2>
+
+                    <p class="hero-desc">
+                        Drop a video, upload audio, or record live — your assistant does the rest.
+                    </p>
+
+                    <ul class="hero-features">
+                        <li>Full Transcription</li>
+                        <li>Smart Summarisation</li>
+                        <li>Action Item Extraction</li>
+                        <li>RAG Chat over Transcript</li>
+                    </ul>
+                </div>
+            </aside>
+
+            <!-- ─── RIGHT CONFIG PANEL ──────────────── -->
+            <section id="empty-state" class="config-panel">
+
                 <form id="analyze-form" class="input-panel">
-                    <div class="panel-header">
-                        <span class="panel-kicker">Input</span>
-                        <span class="status-chip" id="status-chip">Idle</span>
+
+                    <!-- Config panel header -->
+                    <div class="config-header">
+                        <p class="config-kicker">CONFIGURE INPUT</p>
+                        <span class="status-chip" id="status-chip">
+                            <span class="status-dot"></span> IDLE
+                        </span>
                     </div>
 
-                    <div class="workflow-steps">
-                        <section class="workflow-step">
-                            <div class="step-heading">
-                                <div></div>
-                                <label class="field language-field">
-                                    <span>Language</span>
-                                    <div class="language-toggle" role="group" aria-label="Language">
-                                        <button type="button" class="language-option active" data-language="english">English</button>
-                                        <button type="button" class="language-option" data-language="hinglish">Hinglish</button>
-                                    </div>
-                                    <select id="language" name="language" class="native-language-select" aria-hidden="true" tabindex="-1">
-                                        <option value="english">English</option>
-                                        <option value="hinglish">Hinglish</option>
-                                    </select>
-                                </label>
-                            </div>
-
-                            <div class="source-mode-grid" role="group" aria-label="Input source">
-                                <button type="button" class="source-mode-card" data-source-mode="url">
-                                    <span class="source-mode-title">YouTube URL</span>
-                                    <span class="source-mode-copy">Paste a public or cookie-enabled video link.</span>
-                                </button>
-                                <button type="button" class="source-mode-card" data-source-mode="upload">
-                                    <span class="source-mode-title">Upload File</span>
-                                    <span class="source-mode-copy">Choose an audio or video file from your device.</span>
-                                </button>
-                                <button type="button" class="source-mode-card" data-source-mode="record">
-                                    <span class="source-mode-title">Record Audio</span>
-                                    <span class="source-mode-copy">Capture microphone audio and analyze it directly.</span>
-                                </button>
-                            </div>
-                        </section>
-
-                        <section class="workflow-step source-input-step hidden">
-                            <div class="step-heading"></div>
-
-                            <div class="source-mode-panel" data-source-panel="url">
-                                <label class="field">
-                                    <span>YouTube URL or local file path</span>
-                                    <input type="text" id="source" name="source" placeholder="Paste a YouTube video link">
-                                </label>
-                            </div>
-
-                            <div class="source-mode-panel" data-source-panel="upload">
-                                <div class="field upload-field">
-                                    <span>Upload audio or video</span>
-                                    <input id="media-file" name="file" class="file-input" type="file" accept="audio/*,video/*,.mp3,.mp4,.m4a,.wav,.aac,.flac,.ogg,.webm,.wma,.mov,.mkv,.avi">
-                                    <label for="media-file" class="file-picker">
-                                        <span>Choose file</span>
-                                        <strong id="file-name">No file selected</strong>
-                                    </label>
-                                </div>
-                            </div>
-
-                            <div class="source-mode-panel" data-source-panel="record">
-                                <div class="field recorder-field">
-                                    <span>Microphone recording</span>
-                                    <div class="recorder-controls">
-                                        <button type="button" class="ghost-btn" id="record-start-btn">Start Recording</button>
-                                        <button type="button" class="ghost-btn" id="record-stop-btn" disabled>Stop Recording</button>
-                                        <button type="button" class="ghost-btn" id="record-discard-btn" disabled>Discard</button>
-                                    </div>
-                                    <div id="recording-wave" class="recording-wave hidden" aria-hidden="true"></div>
-                                    <div class="recording-status" id="recording-status">No microphone recording yet.</div>
-                                    <audio id="recording-preview" class="recording-preview hidden" controls></audio>
-                                </div>
-                            </div>
-                        </section>
-
-                        <section class="workflow-step workflow-step-final">
-                            <div class="analyze-row">
-                                <button type="submit" class="primary-btn" id="analyze-btn">Analyze Video</button>
-                            </div>
-                        </section>
+                    <!-- Language toggle -->
+                    <div class="language-row">
+                        <div class="language-toggle" role="group" aria-label="Language">
+                            <button type="button" class="language-option active"
+                                data-language="english">English</button>
+                            <button type="button" class="language-option" data-language="hinglish">Hinglish</button>
+                        </div>
+                        <!-- Hidden native select kept for JS compatibility -->
+                        <select id="language" name="language" class="native-language-select" aria-hidden="true"
+                            tabindex="-1">
+                            <option value="english">English</option>
+                            <option value="hinglish">Hinglish</option>
+                        </select>
                     </div>
+
+                    <!-- ── SOURCE MODE CARDS ── -->
+                    <div class="source-mode-grid" role="group" aria-label="Input source">
+
+                        <!-- YouTube URL card -->
+                        <button type="button" class="source-mode-card" data-source-mode="url">
+                            <span class="source-card-icon-wrap">
+                                <svg viewBox="0 0 24 24" width="22" height="22">
+                                    <path fill="currentColor"
+                                        d="M10,15L15.19,12L10,9V15M21.56,7.17C21.69,7.64 21.78,8.27 21.84,9.07C21.91,9.87 21.94,10.56 21.94,11.16L22,12C22,14.19 21.84,15.8 21.56,16.83C21.31,17.73 20.73,18.31 19.83,18.56C19.36,18.69 18.73,18.78 17.93,18.84C17.13,18.91 16.44,18.94 15.84,18.94L15,19C12.81,19 11.2,18.84 10.17,18.56C9.27,18.31 8.69,17.73 8.44,16.83C8.31,16.36 8.22,15.73 8.16,14.93C8.09,14.13 8.06,13.44 8.06,12.84L8,12C8,9.81 8.16,8.2 8.44,7.17C8.69,6.27 9.27,5.69 10.17,5.44C10.64,5.31 11.27,5.22 12.07,5.16C12.87,5.09 13.56,5.06 14.16,5.06L15,5C17.19,5 18.8,5.16 19.83,5.44C20.73,5.69 21.31,6.27 21.56,7.17Z" />
+                                </svg>
+                            </span>
+                            <span class="source-card-text">
+                                <span class="source-mode-title">YouTube URL</span>
+                                <span class="source-mode-copy">Paste a public or cookie-enabled link</span>
+                            </span>
+                            <svg class="source-card-chevron" viewBox="0 0 24 24" width="16" height="16">
+                                <path fill="currentColor" d="M9 18l6-6-6-6" />
+                            </svg>
+                        </button>
+
+                        <!-- Upload File card -->
+                        <button type="button" class="source-mode-card" data-source-mode="upload">
+                            <span class="source-card-icon-wrap">
+                                <svg viewBox="0 0 24 24" width="22" height="22">
+                                    <path fill="currentColor"
+                                        d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,18V8L14,2M12,18L7,13H10V9H14V13H17L12,18M13,9V3.5L18.5,9H13Z" />
+                                </svg>
+                            </span>
+                            <span class="source-card-text">
+                                <span class="source-mode-title">Upload File</span>
+                                <span class="source-mode-copy">Audio or video from your device</span>
+                            </span>
+                            <svg class="source-card-chevron" viewBox="0 0 24 24" width="16" height="16">
+                                <path fill="currentColor" d="M9 18l6-6-6-6" />
+                            </svg>
+                        </button>
+
+                        <!-- Record Audio card -->
+                        <button type="button" class="source-mode-card" data-source-mode="record">
+                            <span class="source-card-icon-wrap">
+                                <svg viewBox="0 0 24 24" width="22" height="22">
+                                    <path fill="currentColor"
+                                        d="M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19Z" />
+                                </svg>
+                            </span>
+                            <span class="source-card-text">
+                                <span class="source-mode-title">Record Audio</span>
+                                <span class="source-mode-copy">Capture microphone live</span>
+                            </span>
+                            <svg class="source-card-chevron" viewBox="0 0 24 24" width="16" height="16">
+                                <path fill="currentColor" d="M9 18l6-6-6-6" />
+                            </svg>
+                        </button>
+
+                    </div><!-- /source-mode-grid -->
+
+                    <!-- ── DYNAMIC INPUT AREA ── -->
+                    <div class="source-input-step hidden">
+
+                        <!-- PANEL: YouTube URL -->
+                        <div class="source-mode-panel" data-source-panel="url">
+                            <p class="input-section-label">YOUTUBE URL OR FILE PATH</p>
+                            <label class="field">
+                                <span class="sr-only">YouTube URL or local file path</span>
+                                <input type="text" id="source" name="source" placeholder="Paste a YouTube video link">
+                            </label>
+                        </div>
+
+                        <!-- PANEL: Upload File -->
+                        <div class="source-mode-panel" data-source-panel="upload">
+                            <p class="input-section-label">UPLOAD AUDIO OR VIDEO</p>
+                            <div class="field upload-field">
+                                <input id="media-file" name="file" class="file-input" type="file"
+                                    accept="audio/*,video/*,.mp3,.mp4,.m4a,.wav,.aac,.flac,.ogg,.webm,.wma,.mov,.mkv,.avi">
+                                <label for="media-file" class="file-picker">
+                                    <span>CHOOSE FILE</span>
+                                    <strong id="file-name">No file selected</strong>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- PANEL: Record Audio -->
+                        <div class="source-mode-panel" data-source-panel="record">
+                            <p class="input-section-label">MICROPHONE RECORDING</p>
+                            <div class="field recorder-field">
+                                <div class="recorder-controls">
+                                    <button type="button" class="ghost-btn" id="record-start-btn">Start
+                                        Recording</button>
+                                    <button type="button" class="ghost-btn" id="record-stop-btn" disabled>Stop
+                                        Recording</button>
+                                    <button type="button" class="ghost-btn" id="record-discard-btn"
+                                        disabled>Discard</button>
+                                </div>
+                                <div id="recording-wave" class="recording-wave hidden" aria-hidden="true"></div>
+                                <div class="recording-status" id="recording-status">No microphone recording yet.</div>
+                                <audio id="recording-preview" class="recording-preview hidden" controls></audio>
+                            </div>
+                        </div>
+
+                    </div><!-- /source-input-step -->
+
+                    <!-- ── ANALYZE BUTTON ── -->
+                    <div class="analyze-row">
+                        <button type="submit" class="primary-btn" id="analyze-btn">
+                            Analyze Video
+                            <svg viewBox="0 0 24 24" width="16" height="16"
+                                style="margin-left:8px;vertical-align:middle;">
+                                <path fill="currentColor" d="M8 5v14l11-7z" />
+                            </svg>
+                        </button>
+                    </div>
+
                 </form>
-            </section>
+            </section><!-- /config-panel -->
 
+            <!-- ═══════════════════════════════════════════
+             RESULTS SECTION  (unchanged IDs/structure)
+            ════════════════════════════════════════════ -->
             <section id="results-section" class="results hidden">
+
                 <div class="panel title-panel">
                     <p class="panel-kicker">Session Title</p>
                     <h3 id="result-title">Untitled Session</h3>
@@ -152,16 +277,28 @@
                         <div class="card-title-group">
                             <p class="panel-kicker">Summary</p>
                             <div class="card-actions">
-                                <button class="action-icon-btn copy-btn" data-copy-target="summary-content" title="Copy Summary" type="button">
-                                    <svg class="icon-copy" viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
-                                    <svg class="icon-check hidden" viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="3" d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>
+                                <button class="action-icon-btn copy-btn" data-copy-target="summary-content"
+                                    title="Copy Summary" type="button">
+                                    <svg class="icon-copy" viewBox="0 0 24 24" width="16" height="16">
+                                        <path fill="currentColor"
+                                            d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z" />
+                                    </svg>
+                                    <svg class="icon-check hidden" viewBox="0 0 24 24" width="16" height="16">
+                                        <path fill="none" stroke="currentColor" stroke-width="3"
+                                            d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z" />
+                                    </svg>
                                 </button>
-                                <button class="action-icon-btn pdf-btn" data-pdf-type="summary" title="Download Summary PDF" type="button">
-                                    <svg class="icon-pdf" viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5zM9 8.5V10h1V8.5H9zm6 1.5V8.5h1V10h-1zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6z"/></svg>
+                                <button class="action-icon-btn pdf-btn" data-pdf-type="summary"
+                                    title="Download Summary PDF" type="button">
+                                    <svg class="icon-pdf" viewBox="0 0 24 24" width="16" height="16">
+                                        <path fill="currentColor"
+                                            d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5zM9 8.5V10h1V8.5H9zm6 1.5V8.5h1V10h-1zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6z" />
+                                    </svg>
                                 </button>
                             </div>
                         </div>
-                        <button id="transcript-toggle-btn" class="ghost-btn transcript-toggle-btn" type="button">Show Transcript</button>
+                        <button id="transcript-toggle-btn" class="ghost-btn transcript-toggle-btn" type="button">Show
+                            Transcript</button>
                     </div>
                     <div id="summary-content" class="text-block"></div>
 
@@ -169,12 +306,23 @@
                         <div class="inline-transcript-head">
                             <p class="panel-kicker inline-transcript-label">Full Transcript</p>
                             <div class="card-actions">
-                                <button class="action-icon-btn copy-btn" data-copy-target="inline-transcript-content" title="Copy Transcript" type="button">
-                                    <svg class="icon-copy" viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
-                                    <svg class="icon-check hidden" viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="3" d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>
+                                <button class="action-icon-btn copy-btn" data-copy-target="inline-transcript-content"
+                                    title="Copy Transcript" type="button">
+                                    <svg class="icon-copy" viewBox="0 0 24 24" width="16" height="16">
+                                        <path fill="currentColor"
+                                            d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z" />
+                                    </svg>
+                                    <svg class="icon-check hidden" viewBox="0 0 24 24" width="16" height="16">
+                                        <path fill="none" stroke="currentColor" stroke-width="3"
+                                            d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z" />
+                                    </svg>
                                 </button>
-                                <button class="action-icon-btn pdf-btn" data-pdf-type="transcript" title="Download Transcript PDF" type="button">
-                                    <svg class="icon-pdf" viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5zM9 8.5V10h1V8.5H9zm6 1.5V8.5h1V10h-1zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6z"/></svg>
+                                <button class="action-icon-btn pdf-btn" data-pdf-type="transcript"
+                                    title="Download Transcript PDF" type="button">
+                                    <svg class="icon-pdf" viewBox="0 0 24 24" width="16" height="16">
+                                        <path fill="currentColor"
+                                            d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5zM9 8.5V10h1V8.5H9zm6 1.5V8.5h1V10h-1zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6z" />
+                                    </svg>
                                 </button>
                             </div>
                         </div>
@@ -183,15 +331,27 @@
 
                     <div class="summary-actions">
                         <button class="result-nav-btn summary-action-btn" type="button" data-result-target="actions">
-                            <svg class="btn-icon" viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                            <svg class="btn-icon" viewBox="0 0 24 24" width="16" height="16">
+                                <path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                            </svg>
                             <span>Action Items</span>
                         </button>
                         <button class="result-nav-btn summary-action-btn" type="button" data-result-target="decisions">
-                            <svg class="btn-icon" viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3M15.5 7.5L19 4"/></svg>
+                            <svg class="btn-icon" viewBox="0 0 24 24" width="16" height="16">
+                                <path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3M15.5 7.5L19 4" />
+                            </svg>
                             <span>Key Decisions</span>
                         </button>
                         <button class="result-nav-btn summary-action-btn" type="button" data-result-target="questions">
-                            <svg class="btn-icon" viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2zM9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/></svg>
+                            <svg class="btn-icon" viewBox="0 0 24 24" width="16" height="16">
+                                <path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2zM9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01" />
+                            </svg>
                             <span>Open Questions</span>
                         </button>
                     </div>
@@ -199,23 +359,32 @@
 
                 <div id="result-modal" class="result-modal hidden" aria-hidden="true">
                     <div class="result-modal-backdrop" data-modal-close></div>
-                    <article class="panel result-modal-panel" role="dialog" aria-modal="true" aria-labelledby="result-modal-title">
+                    <article class="panel result-modal-panel" role="dialog" aria-modal="true"
+                        aria-labelledby="result-modal-title">
                         <div class="result-modal-header">
                             <div>
                                 <p class="panel-kicker">Review</p>
                                 <h3 id="result-modal-title">Meeting Detail</h3>
                             </div>
                             <div class="modal-actions">
-                                <button id="modal-copy-btn" class="action-icon-btn copy-btn" title="Copy Content" type="button">
-                                    <svg class="icon-copy" viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
-                                    <svg class="icon-check hidden" viewBox="0 0 24 24" width="16" height="16"><path fill="none" stroke="currentColor" stroke-width="3" d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>
+                                <button id="modal-copy-btn" class="action-icon-btn copy-btn" title="Copy Content"
+                                    type="button">
+                                    <svg class="icon-copy" viewBox="0 0 24 24" width="16" height="16">
+                                        <path fill="currentColor"
+                                            d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z" />
+                                    </svg>
+                                    <svg class="icon-check hidden" viewBox="0 0 24 24" width="16" height="16">
+                                        <path fill="none" stroke="currentColor" stroke-width="3"
+                                            d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z" />
+                                    </svg>
                                 </button>
-                                <button class="ghost-btn result-modal-close" type="button" data-modal-close>Close</button>
+                                <button class="ghost-btn result-modal-close" type="button"
+                                    data-modal-close>Close</button>
                             </div>
                         </div>
-
                         <div class="result-modal-body">
-                            <section class="result-view" data-result-view="transcript" data-result-title="Full Transcript">
+                            <section class="result-view" data-result-view="transcript"
+                                data-result-title="Full Transcript">
                                 <div id="transcript-content" class="text-block transcript-block"></div>
                             </section>
                             <section class="result-view" data-result-view="actions" data-result-title="Action Items">
@@ -224,7 +393,8 @@
                             <section class="result-view" data-result-view="decisions" data-result-title="Key Decisions">
                                 <div id="key-decisions-content" class="text-block"></div>
                             </section>
-                            <section class="result-view" data-result-view="questions" data-result-title="Open Questions">
+                            <section class="result-view" data-result-view="questions"
+                                data-result-title="Open Questions">
                                 <div id="open-questions-content" class="text-block"></div>
                             </section>
                         </div>
@@ -239,22 +409,25 @@
                         </div>
                         <button id="clear-chat-btn" class="ghost-btn" type="button">Clear Chat</button>
                     </div>
-
                     <div id="chat-history" class="chat-history">
                         <div class="chat-empty">
                             <p>No messages yet. Ask anything about the transcript.</p>
                         </div>
                     </div>
-
                     <form id="chat-form" class="chat-form">
-                        <textarea id="chat-input" rows="2" placeholder="What were the main decisions made?" id="chat-input"></textarea>
+                        <textarea id="chat-input" rows="2" placeholder="What were the main decisions made?"></textarea>
                         <button type="submit" class="primary-btn" id="send-btn">Send</button>
                     </form>
                 </section>
-            </section>
-        </main>
-    </div>
 
+            </section><!-- /results-section -->
+
+        </main><!-- /main-content -->
+
+    </div><!-- /app-shell -->
+
+    <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
+
 </html>

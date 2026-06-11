@@ -42,7 +42,7 @@ chunks = process_input(source)
 
 transcript = transcribe_all(chunks, language=language)
 print("\n" + "=" * 60)
-print("📝 TRANSCRIPT")
+print("📝 TRAgit statusNSCRIPT")
 print("=" * 60)
 print(transcript[:500] + "..." if len(transcript) > 500 else transcript)
 

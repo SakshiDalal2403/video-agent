@@ -7,11 +7,13 @@ import uuid
 from dotenv import load_dotenv
 from flask import Flask, jsonify, render_template, request, session
 from werkzeug.utils import secure_filename
+from auth import auth_bp, jwt_required
 
 load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "video-agent-dev-secret")
+app.register_blueprint(auth_bp)
 
 UPLOAD_DIR = os.path.join("downloads", "uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -332,6 +334,8 @@ def run_pipeline_async(run_id, source, language):
         WORKER_STOP_EVENTS.pop(run_id, None)
 
 
+
+
 @app.route("/")
 def index():
     get_session_id()
@@ -339,6 +343,7 @@ def index():
 
 
 @app.get("/api/state")
+@jwt_required
 def get_state():
     sid = get_session_id()
     tab_id = get_request_tab_id()
@@ -348,6 +353,7 @@ def get_state():
 
 
 @app.post("/api/analyze")
+@jwt_required
 def analyze():
     sid = get_session_id()
     uploaded_file = None
@@ -397,6 +403,7 @@ def analyze():
 
 
 @app.post("/api/chat")
+@jwt_required
 def chat():
     sid = get_session_id()
     payload = request.get_json(silent=True) or {}
@@ -437,6 +444,7 @@ def chat():
 
 
 @app.post("/api/chat/clear")
+@jwt_required
 def clear_chat():
     sid = get_session_id()
     payload = request.get_json(silent=True) or {}
