@@ -15,6 +15,7 @@ JWT_ALGORITHM = "HS256"
 
 # Database initialization to create user table
 def init_db():
+    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("""
