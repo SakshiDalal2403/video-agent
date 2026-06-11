@@ -163,7 +163,34 @@ select {
     color: var(--text-muted);
 }
 
-/* ── Start New Button ─────────────────────────────────────────── */
+/* ── Topbar Actions & Buttons ─────────────────────────────────────────── */
+.topbar-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.logout-topbar-btn {
+    flex: 0 0 auto;
+    min-height: 36px;
+    padding: 8px 18px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 0.86rem;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+}
+
+.logout-topbar-btn:hover {
+    background: var(--surface-muted);
+    color: var(--text);
+    border-color: var(--text-muted);
+}
+
 .start-new-topbar-btn {
     flex: 0 0 auto;
     min-height: 36px;
@@ -217,7 +244,7 @@ select {
 ═══════════════════════════════════════════════════════════════════ */
 .main-content {
     display: grid;
-    grid-template-columns: 360px minmax(0, 1fr);
+    grid-template-columns: clamp(360px, 42vw, 48%) minmax(0, 1fr);
     grid-template-rows: auto;
     flex: 1;
     min-height: 0;
@@ -635,10 +662,10 @@ select {
 .input-section-label {
     font-family: "IBM Plex Mono", monospace;
     font-size: 0.60rem;
-    font-weight: 600;
+    font-weight: 800;
     letter-spacing: 0.16em;
     text-transform: uppercase;
-    color: var(--text-muted);
+    color: #3a3328; /* Even darker muted text */
     margin: 0 0 10px;
 }
 
@@ -732,9 +759,10 @@ select {
 .file-picker span {
     font-family: "IBM Plex Mono", monospace;
     font-size: 0.72rem;
+    font-weight: 800;
     letter-spacing: 0.10em;
     text-transform: uppercase;
-    color: var(--accent);
+    color: #6b581f; /* Darker bold gold */
     white-space: nowrap;
 }
 
@@ -743,9 +771,9 @@ select {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    color: var(--text-muted);
+    color: #3a3328; /* Even darker bold text */
     font-size: 0.86rem;
-    font-weight: 500;
+    font-weight: 800;
 }
 
 /* ── Recorder Field ───────────────────────────────────────────── */
@@ -1209,6 +1237,24 @@ select {
 #results-section p,
 #results-section li {
     color: #2a2420;
+}
+
+#results-section strong,
+#results-section b,
+#results-section .text-block strong,
+#results-section .text-block b {
+    color: #000000;
+    font-weight: 800;
+}
+
+#results-section h1,
+#results-section h2,
+#results-section h3,
+#results-section h4,
+#results-section h5,
+#results-section h6 {
+    color: #000000;
+    font-weight: 800;
 }
 
 .panel-kicker,

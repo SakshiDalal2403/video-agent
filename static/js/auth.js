@@ -55,6 +55,14 @@ document.addEventListener("DOMContentLoaded", () => {
         hideLoginModal();
     }
 
+    // Handle Logout
+    const logoutBtn = document.getElementById("logout-btn");
+    if (logoutBtn) {
+        logoutBtn.addEventListener("click", () => {
+            showLoginModal();
+        });
+    }
+
     // Toggle between Login and Sign Up modes
     if (authElements.authToggleBtn) {
         authElements.authToggleBtn.addEventListener("click", (e) => {
