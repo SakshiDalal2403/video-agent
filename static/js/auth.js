@@ -63,6 +63,26 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    // Toggle Password Visibility
+    const togglePasswordBtn = document.getElementById("toggle-password");
+    if (togglePasswordBtn) {
+        togglePasswordBtn.addEventListener("click", () => {
+            const passwordInput = authElements.authPassword;
+            const eyeIcon = togglePasswordBtn.querySelector(".eye-icon");
+            const eyeOffIcon = togglePasswordBtn.querySelector(".eye-off-icon");
+            
+            if (passwordInput.type === "password") {
+                passwordInput.type = "text";
+                eyeIcon.style.display = "none";
+                eyeOffIcon.style.display = "block";
+            } else {
+                passwordInput.type = "password";
+                eyeIcon.style.display = "block";
+                eyeOffIcon.style.display = "none";
+            }
+        });
+    }
+
     // Toggle between Login and Sign Up modes
     if (authElements.authToggleBtn) {
         authElements.authToggleBtn.addEventListener("click", (e) => {

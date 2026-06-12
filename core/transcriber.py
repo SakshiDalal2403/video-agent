@@ -60,7 +60,7 @@ def transcribe_chunk_groq(chunk_path: str) -> str:
             last_error = exc
             if attempt == 2:
                 break
-            time.sleep(2 * (attempt + 1))
+            time.sleep(2 ** (attempt + 1))
 
     print(f"\nGroq Whisper transcription failed: {last_error}\n")
     raise last_error
@@ -151,20 +151,26 @@ def transcribe_chunk(chunk_path: str, language: str = "english") -> str:
     return transcribe_chunk_groq(chunk_path)
 
 def transcribe_all(chunks: list, language: str = "english") -> str:
-
-    full_transcript = "" 
+    from concurrent.futures import ThreadPoolExecutor, as_completed
 
     engine = "Sarvam AI" if language.lower() == "hinglish" else "Groq Whisper API"
     print(f"Using {engine} for transcription.")
 
-    for i, chunk in enumerate(chunks):  
+    results = {}
 
-        print(f"Transcribing chunk {i + 1}/{len(chunks)}...")
+    def _transcribe_indexed(args):
+        idx, chunk = args
+        print(f"Transcribing chunk {idx + 1}/{len(chunks)}...")
+        text = transcribe_chunk(chunk, language=language)
+        return idx, text
 
-        text = transcribe_chunk(chunk, language=language)  
+    with ThreadPoolExecutor(max_workers=min(len(chunks), 4)) as pool:
+        futures = {pool.submit(_transcribe_indexed, (i, chunk)): i for i, chunk in enumerate(chunks)}
+        for future in as_completed(futures):
+            idx, text = future.result()
+            results[idx] = text
 
-        full_transcript += text + " "  
+    full_transcript = " ".join(results[i] for i in sorted(results))
 
     print("Transcription complete.")
-
     return full_transcript.strip()

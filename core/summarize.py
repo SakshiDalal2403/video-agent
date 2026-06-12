@@ -20,7 +20,7 @@ def invoke_with_retry(chain, payload, attempts: int = 3):
             last_error = exc
             if attempt == attempts - 1:
                 break
-            time.sleep(2 * (attempt + 1))
+            time.sleep(2 ** (attempt + 1))
     raise last_error
 
 

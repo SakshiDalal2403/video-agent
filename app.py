@@ -3,6 +3,7 @@ import os
 import threading
 import time
 import uuid
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from dotenv import load_dotenv
 from flask import Flask, jsonify, render_template, request, session
@@ -269,27 +270,35 @@ def run_pipeline_async(run_id, source, language):
         update_step(run_id, "transcript", "done")
         log_pipeline(run_id, f"Transcription done ({len(transcript)} characters)")
 
-        log_pipeline(run_id, "Starting title generation")
-        update_step(run_id, "title", "active")
         from core.summarize import generate_title, summarize
+        from core.extractor import extract_all_async
 
-        title = generate_title(transcript)
-        update_step(run_id, "title", "done")
-        log_pipeline(run_id, "Title generation done")
-
+        # Run title and summary concurrently
+        log_pipeline(run_id, "Starting title generation")
         log_pipeline(run_id, "Starting summarisation")
+        update_step(run_id, "title", "active")
         update_step(run_id, "summary", "active")
-        summary = summarize(transcript)
-        update_step(run_id, "summary", "done")
-        log_pipeline(run_id, "Summarisation done")
 
-        from core.extractor import extract_action_items, extract_key_decisions, extract_questions
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            title_future = pool.submit(generate_title, transcript)
+            summary_future = pool.submit(summarize, transcript)
+            title = title_future.result()
+            update_step(run_id, "title", "done")
+            log_pipeline(run_id, "Title generation done")
+            summary = summary_future.result()
+            update_step(run_id, "summary", "done")
+            log_pipeline(run_id, "Summarisation done")
 
+        # Run all 3 extractors concurrently using asyncio
         log_pipeline(run_id, "Starting extraction")
         update_step(run_id, "extract", "active")
-        action_items = extract_action_items(transcript)
-        key_decisions = extract_key_decisions(transcript)
-        open_questions = extract_questions(transcript)
+
+        import asyncio
+        extraction = asyncio.run(extract_all_async(transcript))
+        action_items = extraction["action_items"]
+        key_decisions = extraction["key_decisions"]
+        open_questions = extraction["open_questions"]
+
         update_step(run_id, "extract", "done")
         log_pipeline(run_id, "Extraction done")
 
