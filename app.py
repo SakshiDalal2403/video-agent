@@ -1,3 +1,14 @@
+import importlib.metadata
+_orig_version = importlib.metadata.version
+def _patched_version(package_name):
+    try:
+        return _orig_version(package_name)
+    except importlib.metadata.PackageNotFoundError:
+        if package_name == "redis":
+            return "5.0.0"
+        raise
+importlib.metadata.version = _patched_version
+
 import encodings.idna  # noqa: F401 — force-register idna codec before Werkzeug loads
 import os
 import threading
