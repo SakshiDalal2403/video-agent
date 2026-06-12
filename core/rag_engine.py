@@ -65,9 +65,9 @@ Context from meeting transcript:
     return rag_chain
 
 
-def load_rag_chain(persist_directory: str | None = None):
-    log_rag(f"Loading RAG chain from persist_directory={persist_directory}")
-    vector_store = load_vector_store(persist_directory) if persist_directory else load_vector_store()
+def load_rag_chain(run_id: str):
+    log_rag(f"Loading RAG chain from namespace={run_id}")
+    vector_store = load_vector_store(run_id)
     retriver = get_retriever(vector_store, k=RAG_TOP_K)
     log_rag(f"Retriever ready; it will pick top {RAG_TOP_K} chunk(s) per question")
 

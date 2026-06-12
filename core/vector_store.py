@@ -2,13 +2,12 @@ import os
 import time
 import uuid
 import requests
-from langchain_chroma import Chroma 
+from langchain_pinecone import PineconeVectorStore
 from langchain_core.embeddings import Embeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
 
-CHROMA_DIR = "vector_db"
-COLLECTION_NAME = "meeting_transcript"
+PINECONE_INDEX_NAME = os.getenv("PINECONE_INDEX_NAME", "video-agent")
 EMBEDDING_MODEL  = "mistral-embed"
 MISTRAL_EMBEDDINGS_URL = "https://api.mistral.ai/v1/embeddings"
 EMBEDDING_BATCH_SIZE = 64
@@ -45,17 +44,11 @@ class MistralAPIEmbeddings(Embeddings):
     def embed_query(self, text: str) -> list[float]:
         return self.embed_documents([text])[0]
 
-def _new_run_chroma_dir(run_id: str | None = None) -> str:
-    run_dir = os.path.join(CHROMA_DIR, "runs", run_id or uuid.uuid4().hex)
-    os.makedirs(run_dir, exist_ok=True)
-    log_vector(f"Using Chroma persist directory: {run_dir}")
-    return run_dir
-
 def get_embeddings():
     log_vector(f"Using Mistral embedding API model: {EMBEDDING_MODEL}")
     return MistralAPIEmbeddings()
  
-def build_vector_store(transcript : str, run_id: str | None = None)->Chroma:
+def build_vector_store(transcript : str, run_id: str | None = None) -> PineconeVectorStore:
     started_at = time.time()
     log_vector(f"Building vector store for transcript length: {len(transcript)} characters")
 
@@ -70,35 +63,33 @@ def build_vector_store(transcript : str, run_id: str | None = None)->Chroma:
         Document(page_content=chunk, metadata = {'chunk_index' : i})
         for i,chunk in enumerate(chunks)
     ]
-    log_vector(f"Created {len(docs)} Chroma document(s)")
+    log_vector(f"Created {len(docs)} document(s)")
 
     embeddings = get_embeddings()
-    persist_directory = _new_run_chroma_dir(run_id)
-    log_vector("Starting Chroma.from_documents() embedding + persist step")
-    vector_store = Chroma.from_documents(
-        documents= docs,
+    namespace = run_id or uuid.uuid4().hex
+    log_vector(f"Starting PineconeVectorStore.from_documents() with namespace {namespace}")
+    vector_store = PineconeVectorStore.from_documents(
+        documents=docs,
         embedding=embeddings,
-        collection_name=COLLECTION_NAME,
-        persist_directory=persist_directory
+        index_name=PINECONE_INDEX_NAME,
+        namespace=namespace
     )
-    log_vector(f"Chroma vector store built in {time.time() - started_at:.2f}s")
+    log_vector(f"Pinecone vector store built in {time.time() - started_at:.2f}s")
 
     return vector_store
 
-
-
-def load_vector_store(persist_directory: str = CHROMA_DIR) ->Chroma:
-    log_vector(f"Loading vector store from: {persist_directory}")
+def load_vector_store(run_id: str) -> PineconeVectorStore:
+    log_vector(f"Loading Pinecone vector store from namespace: {run_id}")
     embeddings = get_embeddings()
-    vector_store = Chroma(
-        collection_name=COLLECTION_NAME,
-        embedding_function= embeddings,
-        persist_directory=persist_directory
+    vector_store = PineconeVectorStore(
+        index_name=PINECONE_INDEX_NAME,
+        embedding=embeddings,
+        namespace=run_id
     )
 
     return vector_store
 
-def get_retriever(vector_store : Chroma, k :int = 4):
+def get_retriever(vector_store : PineconeVectorStore, k :int = 4):
     log_vector(f"Creating retriever with top_k={k}")
     return vector_store.as_retriever(
         search_type = 'similarity',

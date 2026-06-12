@@ -307,16 +307,15 @@ def run_pipeline_async(run_id, source, language):
         log_pipeline(run_id, "Starting RAG vector store")
         update_step(run_id, "rag", "active")
         rag_chain = build_rag_chain(transcript, run_id=run_id)
-        chroma_path = os.path.join("vector_db", "runs", run_id)
         update_step(run_id, "rag", "done")
-        log_pipeline(run_id, f"RAG vector store done at {chroma_path}")
+        log_pipeline(run_id, f"Pinecone vector store done at namespace {run_id}")
 
         RAG_CHAINS[run_id] = rag_chain
         update_state(
             run_id,
             processing=False,
             pipeline_done=True,
-            chroma_path=chroma_path,
+            pinecone_ready=True,
             result={
                 "title": title,
                 "transcript": transcript,
@@ -429,11 +428,11 @@ def chat():
 
     rag_chain = RAG_CHAINS.get(run_id)
     if rag_chain is None:
-        chroma_path = state.get("chroma_path")
-        if chroma_path:
+        pinecone_ready = state.get("pinecone_ready")
+        if pinecone_ready:
             from core.rag_engine import load_rag_chain
 
-            rag_chain = load_rag_chain(chroma_path)
+            rag_chain = load_rag_chain(run_id)
             RAG_CHAINS[run_id] = rag_chain
 
     if rag_chain is None:

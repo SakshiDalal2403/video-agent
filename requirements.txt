@@ -20,9 +20,8 @@ langchain-mistralai>=0.2.0        # LangChain-native Mistral integration
 mistralai>=1.0.3                  # Official Mistral AI client
 langchain-text-splitters>=0.3.0   # Text chunking for RAG
 
-# ── RAG Pipeline ───────────────────────────────
-chromadb>=0.5.0                   # Local vector store
-langchain-chroma>=0.1.2           # LangChain ↔ ChromaDB bridge
+langchain-pinecone>=0.2.0         # Cloud vector store integration
+pinecone>=5.0.0                   # Pinecone API client
 huggingface-hub>=0.24.5           # Model downloads from HuggingFace Hub
 
 # ── Streamlit UI ───────────────────────────────
