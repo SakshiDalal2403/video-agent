@@ -102,6 +102,35 @@ function setSourceMode(mode) {
     elements.sourceModePanels.forEach((panel) => {
         panel.classList.toggle("active", panel.dataset.sourcePanel === mode);
     });
+
+    updateAnalyzeButtonText();
+}
+
+function updateAnalyzeButtonText() {
+    const activeBtn = document.querySelector(".source-mode-card.active");
+    if (!activeBtn || !elements.analyzeBtn) return;
+    
+    const mode = activeBtn.dataset.sourceMode;
+    let isAudio = false;
+    
+    if (mode === "record") {
+        isAudio = true;
+    } else if (mode === "upload") {
+        const file = elements.mediaFile?.files[0];
+        if (file && (file.type.startsWith("video/") || file.name.match(/\.(mp4|mov|mkv|avi|webm)$/i))) {
+            isAudio = false;
+        } else {
+            isAudio = true;
+        }
+    }
+    
+    const svgIcon = `<svg viewBox="0 0 24 24" width="16" height="16" style="margin-left:8px;vertical-align:middle;"><path fill="currentColor" d="M8 5v14l11-7z" /></svg>`;
+    
+    if (isAudio) {
+        elements.analyzeBtn.innerHTML = `Analyze Audio ${svgIcon}`;
+    } else {
+        elements.analyzeBtn.innerHTML = `Analyze Video ${svgIcon}`;
+    }
 }
 
 function setMessage(message, type = "info") {
@@ -275,11 +304,13 @@ function setupRecordingWave() {
 }
 
 function setRecordingWaveVisible(visible) {
-    elements.recordingWave.classList.toggle("hidden", !visible);
+    const wrapper = document.getElementById("recording-wave-wrapper");
+    if (wrapper) wrapper.classList.toggle("hidden", !visible);
 }
 
 function updateRecordingWave(samples) {
-    if (!elements.recordingWave || elements.recordingWave.classList.contains("hidden")) {
+    const wrapper = document.getElementById("recording-wave-wrapper");
+    if (!wrapper || wrapper.classList.contains("hidden")) {
         return;
     }
 
@@ -584,6 +615,13 @@ async function postAnalyze(source, language, file) {
 }
 
 function clearRecording() {
+    if (state.recordingTimerInterval) {
+        clearInterval(state.recordingTimerInterval);
+        state.recordingTimerInterval = null;
+    }
+    const timerEl = document.getElementById("recording-time");
+    if (timerEl) timerEl.textContent = "00:00";
+
     if (state.recording) {
         resetRecordingNodes();
     }
@@ -706,6 +744,17 @@ async function startRecording() {
         state.recordingSampleRate = audioContext.sampleRate;
         state.recordedChunks = [];
         elements.recordingStatus.textContent = "Recording... speak now.";
+        
+        state.recordingStartTime = Date.now();
+        const timerEl = document.getElementById("recording-time");
+        if (timerEl) timerEl.textContent = "00:00";
+        state.recordingTimerInterval = setInterval(() => {
+            const diff = Math.floor((Date.now() - state.recordingStartTime) / 1000);
+            const m = Math.floor(diff / 60).toString().padStart(2, '0');
+            const s = (diff % 60).toString().padStart(2, '0');
+            if (timerEl) timerEl.textContent = `${m}:${s}`;
+        }, 1000);
+
         setRecordingWaveVisible(true);
         setProcessingUI(state.processing);
 
@@ -735,6 +784,11 @@ function stopRecording() {
         return;
     }
 
+    if (state.recordingTimerInterval) {
+        clearInterval(state.recordingTimerInterval);
+        state.recordingTimerInterval = null;
+    }
+
     elements.recordingStatus.textContent = "Preparing recording...";
     setRecordingWaveVisible(false);
 
@@ -749,7 +803,6 @@ function stopRecording() {
     elements.recordingPreview.src = state.recordingUrl;
     elements.recordingPreview.classList.remove("hidden");
     elements.recordingStatus.textContent = `Ready to analyze: ${state.recordedFile.name}`;
-    elements.fileName.textContent = state.recordedFile.name;
     setProcessingUI(state.processing);
 }
 
@@ -796,6 +849,7 @@ elements.mediaFile.addEventListener("change", () => {
         clearRecording();
     }
     elements.fileName.textContent = file ? file.name : "No file selected";
+    updateAnalyzeButtonText();
 });
 
 elements.sourceModeButtons.forEach((button) => {

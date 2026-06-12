@@ -237,7 +237,7 @@
                                 <input id="media-file" name="file" class="file-input" type="file"
                                     accept="audio/*,video/*,.mp3,.mp4,.m4a,.wav,.aac,.flac,.ogg,.webm,.wma,.mov,.mkv,.avi">
                                 <label for="media-file" class="file-picker">
-                                    <span>CHOOSE FILE</span>
+                                    <span style="font-weight: 900; color: #1a1814;">CHOOSE FILE</span>
                                     <strong id="file-name">No file selected</strong>
                                 </label>
                             </div>
@@ -255,7 +255,10 @@
                                     <button type="button" class="ghost-btn" id="record-discard-btn"
                                         disabled>Discard</button>
                                 </div>
-                                <div id="recording-wave" class="recording-wave hidden" aria-hidden="true"></div>
+                                <div id="recording-wave-wrapper" style="display: flex; align-items: center; justify-content: space-between; margin-top: 10px;" class="hidden">
+                                    <div id="recording-wave" class="recording-wave" aria-hidden="true" style="flex: 1; margin-top: 0;"></div>
+                                    <span id="recording-time" style="font-family: 'IBM Plex Mono', monospace; font-size: 0.9rem; font-weight: 600; color: var(--accent); margin-left: 15px;">00:00</span>
+                                </div>
                                 <div class="recording-status" id="recording-status">No microphone recording yet.</div>
                                 <audio id="recording-preview" class="recording-preview hidden" controls></audio>
                             </div>
